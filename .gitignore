@@ -1,0 +1,36 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Compiled binaries & objects
+*.o
+*.out
+day4/conv2d
+day4/cnn_forward
+day5/fixed_point
+day6/cnn_forward
+day6/cnn_forward_asan
+day6/templated_cnn
+
+# Sanitizer / profiler output
+asan_report.txt
+*.gcda
+*.gcno
+gmon.out
+
+# Data files (too large for GitHub — see day3/README_explanation.md to re-download)
+day3/mnist_data/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code machine-local settings
+.claude/settings.local.json
