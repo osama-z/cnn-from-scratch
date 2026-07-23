@@ -11,14 +11,16 @@
 ## 📊 Progress
 
 ```text
-Month 1: Build It By Hand
-████████████░░░░░░░░░░░░░░░░░░  Day 5 / 21
+Phase 0: Foundation
+██████████████░░░░░░░░░░░░░░░░  Day 6 / 7
 
 Week 1 (Python)  ████████████████████  DONE — NumPy CNN + 95% MNIST
-Week 2 (C)       ████████████░░░░░░░░  Day 5/7 — int8 quantization done
-Week 3 (ARM)     ░░░░░░░░░░░░░░░░░░░░  NOT STARTED
-Week 4 (Review)  ░░░░░░░░░░░░░░░░░░░░  NOT STARTED
+Week 2 (C / C++) █████████████████░░░  Day 6/7 — templates + RAII done
+Next             ░░░░░░░░░░░░░░░░░░░░  Day 7: golden model (critical path)
 ```
+
+> 📌 Following **ROADMAP.md v6.0** (rewritten July 23, 2026) — deadline-driven,
+> with VHDL as the spine. The original 6-month plan is kept at `ROADMAP_v5_archive.md`.
 
 ---
 
@@ -31,6 +33,7 @@ Week 4 (Review)  ░░░░░░░░░░░░░░░░░░░░  N
 | Day 3 | MNIST digit classification | **95% test accuracy** |
 | Day 4 | Full CNN rewritten in C | **16,000+ FPS**, 1.4 KB memory |
 | Day 5 | int8 quantization | **4x smaller**, 20x faster |
+| Day 6 | C++ rewrite: RAII + templates | float & int8 from **one source**, 3/3 predictions agree |
 
 ---
 
@@ -46,7 +49,8 @@ projects/
 ├── day2/                  ✅ Loss + Backprop + Training (Python)
 ├── day3/                  ✅ MNIST 95% Accuracy (Python)
 ├── day4/                  ✅ CNN Forward Pass (C)
-└── day5/                  ✅ Fixed-Point int8 (C)
+├── day5/                  ✅ Fixed-Point int8 (C)
+└── day6/                  ✅ C++ : RAII + Templates
 ```
 
 Each day folder contains:
@@ -65,4 +69,9 @@ cd projects/day3 && python part1_mnist_classifier.py
 # C (Days 4-5)
 cd projects/day4 && make && ./cnn_forward
 cd projects/day5 && make && ./fixed_point
+
+# C++ (Day 6)
+cd projects/day6 && make run    # both: OOP version, then float-vs-int8
+make asan                       # prove RAII: zero leaks, zero UB
+make asm                        # prove `if constexpr` costs nothing
 ```

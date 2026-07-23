@@ -16,8 +16,9 @@ day4/conv2d
 day4/cnn_forward
 day5/fixed_point
 day6/cnn_forward
-day6/cnn_forward_asan
 day6/templated_cnn
+*_asan
+*.s
 
 # Sanitizer / profiler output
 asan_report.txt

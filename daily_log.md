@@ -40,9 +40,26 @@ I learned that `float` multiplication costs ~20 clock cycles on ARM Cortex-M4 wh
 
 ---
 
-## Day 6 — 
+## Day 6 — July 23, 2026
+**Topic:** C++ for AI Deployment (RAII, Polymorphism, Templates)
+
+I rewrote the C CNN as C++ classes and learned that RAII is not a convenience but a
+guarantee — the destructor runs on *every* exit path, including early returns and thrown
+exceptions, which is precisely where C's `free()` gets skipped and a drone slowly leaks its
+RAM away. Templates then let me write each layer once and instantiate it twice, as
+`CNN<float>` and `CNN<int8_t>`, but the lesson that surprised me is that templating the
+storage type alone would have *recreated* Day 5's overflow bug: the accumulator has to be a
+separate type, chosen by an `AccumTraits` specialization, so `int8_t` accumulates in
+`int32_t`. Day 5 taught that rule as a comment I had to remember, and Day 6 made the
+compiler enforce it — and disassembling the two instantiations proved `if constexpr` costs
+nothing at runtime, since the float build emits `mulss` while the int8 build emits `movsbl`
+and `imull`, sharing not one arithmetic instruction.
+
+---
+
+## Day 7 — 
 **Topic:** 
 
-(Write your log here after completing Day 6)
+(Write your log here after completing Day 7)
 
 ---
