@@ -180,15 +180,117 @@ teaches habits that break on real synthesis tools. `numeric_std` is the standard
 
 ---
 
-## 9. Next
+## 9. `relu_int8` — Day 5's trap in logic gates
+
+```vhdl
+y <= x when x > zero_point else zero_point;
+```
+
+One comparator, one 2:1 multiplexer, **no clock**. ReLU has no state, so in
+hardware it is wires — it costs no cycle and can sit in the same cycle as
+whatever feeds it. Contrast the C version, which is a loop over N elements
+costing N iterations.
+
+**Why `zero_point` and not `0`** (`day5/README_explanation.md` §5): the integer 0
+does not represent real 0.0. Dequantize to see it:
+
+```text
+scale = 0.006, zero_point = -128:
+  int8 -128  ->  (-128 - -128) * 0.006 =  0.000   ← real zero
+  int8    0  ->  (   0 - -128) * 0.006 = +0.768   ← NOT zero
+```
+
+Clamping at integer 0 clamps at real **+0.768**, destroying every genuinely
+positive activation below that. Tested by mutation — replacing the line with
+`max(0, x)`:
+
+```text
+FAIL  relu(-50, zp=-128) passes through: got 0, expected -50
+```
+
+No crash, no warning. Just a silently rewritten feature map.
+
+---
+
+## 10. `requantize` — why hardware can't multiply by a float
+
+The int32 accumulator carries units of `input_scale × weight_scale`. Getting back
+to int8 needs a rescale:
+
+```text
+M = (input_scale × weight_scale) / output_scale
+out = saturate( round(acc × M) + output_zero_point )
+```
+
+In C, `M` is a float and that's the end of it. **In hardware there is no float
+multiplier** — and adding one would defeat the whole point of int8. On a small
+FPGA a float multiplier costs hundreds of LUTs; an integer multiply plus a shift
+costs one DSP block.
+
+So approximate `M` as an integer over a power of two:
+
+```text
+M  ≈  M0 / 2^SHIFT
+
+M = (10/127 × 1/127) / (30/127) = 0.002624671916
+M0 = 172, SHIFT = 16  ->  172/65536 = 0.002624511719    (0.006% error)
+```
+
+"Multiply by M" becomes "multiply by 172, shift right 16". Both cheap. **This is
+exactly what TFLite Micro and CMSIS-NN do** — look for `quantized_multiplier` and
+`shift` in their source.
+
+And the number that ties it all together:
+
+```text
+acc = 48,387 (the measured peak)  ->  48387 × 172 >> 16 = 127
+```
+
+The worst-case accumulator maps *exactly* onto int8's maximum. Not luck —
+`output_scale` was chosen so the range fits.
+
+### Three details that are easy to get wrong
+
+| Detail | Why |
+|---|---|
+| Product width = `ACC_WIDTH + MULT_WIDTH` | 32 × 32 needs 64 bits. Declaring it narrower is the int8-accumulator mistake one level further along. |
+| **Saturate, never wrap** | 1,000,000 × M = 2624.67. Wrapped: `2625 mod 256 = 65` — a plausible-looking wrong answer, worse than an obviously wrong one. Clamped: 127. |
+| Round half away from zero, per sign | A bare `shift_right` truncates toward −∞, biasing every output downward. Negative values must be shifted toward zero explicitly. |
+
+---
+
+## 11. Test results
+
+```text
+--- tb_mac_unit ---           7 assertions, all pass
+--- tb_relu_requant ---      16 assertions, all pass
+
+make synth:
+  synthesisable: mac_unit
+  synthesisable: relu_int8
+  synthesisable: requantize
+```
+
+Mutations that were caught:
+
+| Injected bug | Caught by |
+|---|---|
+| Accumulator narrowed 32 → 16 bits | `9 × (-128×-128)`: got 16384, expected 147456 |
+| ReLU written as `max(0, x)` | `relu(-50, zp=-128)`: got 0, expected -50 |
+
+---
+
+## 12. Next
 
 - [x] `mac_unit.vhd` — int8 × int8 → int32, verified against the golden model
-- [ ] `relu_int8.vhd` — `max(zero_point, x)`, not `max(0, x)` (Day 5 §5)
-- [ ] `requantize.vhd` — int32 → int8 with saturation
+- [x] `relu_int8.vhd` — `max(zero_point, x)`, mutation-tested
+- [x] `requantize.vhd` — fixed-point multiplier + shift, saturating
 - [ ] `conv3x3_parallel.vhd` — nine MACs, verified against `image*_conv_acc_int32.txt`
 
-The vectors for that last step already exist. `export_weights.py` wrote them when
-the golden model was built, which was the whole reason for building it first.
+Everything needed for that last step now exists: the MAC does the arithmetic, the
+requantizer scales it, ReLU clamps it, and `day7/vhdl_vectors/` holds 128 expected
+outputs per image. `export_weights.py` wrote those when the golden model was
+built — which was the entire reason for building it first.
 
 ---
 
@@ -199,3 +301,8 @@ the golden model was built, which was the whole reason for building it first.
 3. Why are `rst` and `clr` separate ports?
 4. Three of five checks passed with a 16-bit accumulator. What does that say about tests built from small values?
 5. What does `resize()` do, and why won't VHDL let you omit it?
+6. Why does `relu_int8` need no clock, and what does that cost compared to the C version?
+7. In int8 ReLU, what real value does integer 0 represent when `zero_point = -128`?
+8. Why can't `requantize` just multiply by the float `M`? What replaces it?
+9. Why must requantization saturate rather than wrap? Give the wrong answer it would produce.
+10. Why does a plain `shift_right` bias the output, and how is that fixed?

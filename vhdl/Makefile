@@ -16,8 +16,8 @@ STD       = --std=08
 WORKDIR   = build
 GHDLFLAGS = $(STD) --workdir=$(WORKDIR)
 
-SRC = mac_unit.vhd
-TB  = tb_mac_unit.vhd
+SRC = mac_unit.vhd relu_int8.vhd requantize.vhd
+TB  = tb_mac_unit.vhd tb_relu_requant.vhd
 
 all: test
 
@@ -32,7 +32,10 @@ analyze: | $(WORKDIR)
 # failure` stop the simulation with a non-zero exit code, so `make test`
 # actually fails in CI rather than printing errors and returning success.
 test: analyze
-	$(GHDL) --elab-run $(GHDLFLAGS) tb_mac_unit --assert-level=error
+	@echo "--- tb_mac_unit ---"
+	@$(GHDL) --elab-run $(GHDLFLAGS) tb_mac_unit --assert-level=error
+	@echo "--- tb_relu_requant ---"
+	@$(GHDL) --elab-run $(GHDLFLAGS) tb_relu_requant --assert-level=error
 
 # Same, but dump waveforms for GTKWave. Seeing the accumulator climb across
 # nine cycles is the fastest way to understand what a MAC actually does.
@@ -44,8 +47,10 @@ wave: analyze
 # simulate fine but cannot become hardware -- a genuinely useful gate before
 # taking anything near Vivado.
 synth: analyze
-	$(GHDL) --synth $(GHDLFLAGS) mac_unit > $(WORKDIR)/mac_unit_synth.vhd
-	@echo "synthesised netlist written to $(WORKDIR)/mac_unit_synth.vhd"
+	@for u in mac_unit relu_int8 requantize; do \
+	  $(GHDL) --synth $(GHDLFLAGS) $$u > $(WORKDIR)/$$u_synth.vhd 2>/dev/null \
+	    && echo "  synthesisable: $$u" || echo "  NOT SYNTHESISABLE: $$u"; \
+	done
 
 clean:
 	rm -rf $(WORKDIR)
