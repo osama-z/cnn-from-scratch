@@ -17,6 +17,9 @@ day4/cnn_forward
 day5/fixed_point
 day6/cnn_forward
 day6/templated_cnn
+day7/golden_c
+day7/golden_cpp
+day7/corrupt.bin
 *_asan
 *.s
 

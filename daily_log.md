@@ -57,9 +57,19 @@ and `imull`, sharing not one arithmetic instruction.
 
 ---
 
-## Day 7 — 
-**Topic:** 
+## Day 7 — July 23, 2026
+**Topic:** The Golden Model (Cross-Implementation Verification)
 
-(Write your log here after completing Day 7)
+I discovered that my C and C++ CNNs never actually computed the same thing: both seeded
+`srand(42)`, but they fed the seed into different weight formulas, so "same seed" produced
+two different networks that merely shared a shape — a silent, no-crash bug of the worst
+kind. The fix was to stop generating weights and start loading them from a single
+`weights.bin`, which forced me to design a real binary model format with a magic number, a
+version, a checksum, and 4-byte alignment for zero-copy loading — which is exactly what
+ONNX and TFLite are underneath. The verifier compares every intermediate layer, not just
+the final prediction, so the first layer that diverges pinpoints the bug; NumPy, C, and C++
+now agree to within 1e-10, and the same script emits int8 reference vectors (peak int32
+accumulator = 24,384, Day 5's overflow rule measured on real data) for the VHDL testbench I
+build in Phase 1.
 
 ---

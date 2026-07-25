@@ -11,12 +11,11 @@
 ## 📊 Progress
 
 ```text
-Phase 0: Foundation
-██████████████░░░░░░░░░░░░░░░░  Day 6 / 7
+Phase 0: Foundation  ████████████████████  COMPLETE (Jul 23)
 
 Week 1 (Python)  ████████████████████  DONE — NumPy CNN + 95% MNIST
-Week 2 (C / C++) █████████████████░░░  Day 6/7 — templates + RAII done
-Next             ░░░░░░░░░░░░░░░░░░░░  Day 7: golden model (critical path)
+Week 2 (C / C++) ████████████████████  DONE — templates, RAII, golden model
+Next             ░░░░░░░░░░░░░░░░░░░░  Phase 1: VHDL (the differentiator)
 ```
 
 > 📌 Following **ROADMAP.md v6.0** (rewritten July 23, 2026) — deadline-driven,
@@ -34,6 +33,7 @@ Next             ░░░░░░░░░░░░░░░░░░░░  D
 | Day 4 | Full CNN rewritten in C | **16,000+ FPS**, 1.4 KB memory |
 | Day 5 | int8 quantization | **4x smaller**, 20x faster |
 | Day 6 | C++ rewrite: RAII + templates | float & int8 from **one source**, 3/3 predictions agree |
+| Day 7 | Golden model + verifier | **NumPy = C = C++** to 1e-10, hand-rolled model format |
 
 ---
 
@@ -50,7 +50,8 @@ projects/
 ├── day3/                  ✅ MNIST 95% Accuracy (Python)
 ├── day4/                  ✅ CNN Forward Pass (C)
 ├── day5/                  ✅ Fixed-Point int8 (C)
-└── day6/                  ✅ C++ : RAII + Templates
+├── day6/                  ✅ C++ : RAII + Templates
+└── day7/                  ✅ Golden Model : NumPy = C = C++ verified
 ```
 
 Each day folder contains:
@@ -74,4 +75,9 @@ cd projects/day5 && make && ./fixed_point
 cd projects/day6 && make run    # both: OOP version, then float-vs-int8
 make asan                       # prove RAII: zero leaks, zero UB
 make asm                        # prove `if constexpr` costs nothing
+
+# Golden model (Day 7)
+cd projects/day7 && make verify # prove NumPy = C = C++, layer by layer
+make asan                       # prove the loader has no leaks/overruns
+make test-robust                # prove a corrupt file is rejected
 ```
