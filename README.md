@@ -7,7 +7,7 @@ layout — written from first principles and checked against a single reference 
 
 ```text
         NumPy   ──►    C    ──►   C++   ──►   int8   ──►   VHDL
-      days 1-3       day 4       day 6        day 5       in progress
+      days 1-3       day 4       day 6        day 5       phase 1
           │            │           │            │            │
           └────────────┴───────────┴────────────┴────────────┘
                                   │
@@ -41,6 +41,7 @@ Golden-model verification
 | C inference throughput | **16,000+ FPS**, 1.4 KB working memory |
 | int8 vs float32 | **4× smaller** — all 119 parameters: 476 B → 119 B; ~1.3 pp probability error |
 | Peak int32 conv accumulator | **48,387** — needs 17 bits signed, so int8 *and* int16 overflow |
+| VHDL conv engine vs NumPy | **384/384 outputs match** — hand-written RTL, bit-exact |
 | Memory safety | ASan + UBSan clean on all binaries, zero `free()` in the C++ |
 
 ---
@@ -59,7 +60,7 @@ The single thread running through all of it:
 Day 5    a comment you have to remember             (C)
 Day 6    a type the compiler enforces               (C++ AccumTraits)
 Day 7    48,387 — the peak, measured on real data   (golden model)
-VHDL     a 17-bit-minimum accumulator register      (hardware)
+VHDL     a 32-bit accumulator register, verified    (hardware)
 ```
 
 One rule, four levels of abstraction, each enforcing it more strongly than the last.
@@ -93,7 +94,7 @@ One rule, four levels of abstraction, each enforcing it more strongly than the l
 | **5** | C | int8 quantization, scale/zero-point, the int32 accumulator rule | [explanation](day5/README_explanation.md) |
 | **6** | C++ | Classes, RAII, templates — float and int8 from one source | [explanation](day6/README_explanation.md) |
 | **7** | Python + C + C++ | The golden model, a hand-rolled binary format, layer-by-layer verification | [explanation](day7/README_explanation.md) · [format spec](day7/MODEL_FORMAT.md) |
-| **next** | VHDL | MAC unit and conv engine, verified against the golden model | — |
+| **VHDL** | VHDL | MAC, ReLU, requantize, 3×3 conv engine — **384/384 vs the golden model** | [explanation](vhdl/README_explanation.md) |
 
 ---
 
@@ -113,6 +114,11 @@ cd day7 && make test-robust
 cd day6 && make run
 cd day6 && make asan     # RAII proof: zero leaks, zero free() in the source
 cd day6 && make asm      # `if constexpr` proof: the two builds share no arithmetic
+
+# Hardware: 4 units, 3 testbenches, 407 assertions
+cd vhdl && make test     # includes 384 conv outputs vs the NumPy reference
+cd vhdl && make synth    # prove all 4 units are synthesisable circuits
+cd vhdl && make wave     # gtkwave build/mac.ghw
 
 # Earlier days
 cd day4 && make && ./cnn_forward       # C, ~16k FPS
@@ -143,18 +149,24 @@ differently; demanding exactness across languages and compilers would be wrong.
 The interesting part isn't that the tests pass — it's that they were checked for the
 ability to fail. Bugs were deliberately injected to see whether the suite would notice:
 
-| Injected bug | Caught? |
-|---|---|
-| Off-by-one in convolution padding | ✅ first divergence at `conv` |
-| Dense weight layout transposed | ✅ first divergence at `dense` |
-| Softmax loses its numerical-stability guard | ❌ **passed — a hole in the test** |
+| Injected bug | Layer | Caught? |
+|---|---|---|
+| Off-by-one in convolution padding | C | ✅ first divergence at `conv` |
+| Dense weight layout transposed | C | ✅ first divergence at `dense` |
+| Softmax loses its stability guard | C | ❌ **passed — a hole in the test** |
+| Accumulator narrowed 32 → 16 bits | VHDL | ✅ `got 16384, expected 147456` |
+| ReLU written as `max(0, x)` | VHDL | ✅ `got 0, expected -50` |
+| One of nine multiplies dropped | VHDL | ✅ named the exact pixel |
+| Zero padding replaced with 1 | VHDL | ✅ named the exact pixel |
 
 The third exposed a gap: the original images only drove logits to ~16.8, and `exp(16.8)`
 never overflows, so the guard was never exercised. A fourth test image at amplitude 60
 (logit ≈ 100 → `exp` → `inf` → `NaN`) closed it.
 
-**A passing suite is evidence only once you have checked that it can fail.** The same
-reasoning applies to the RTL testbench coming next.
+The VHDL mutations show the same pattern twice over: at a 16-bit accumulator the
+*small-operand* checks still passed, and only the worst case exposed the wrap.
+
+**A passing suite is evidence only once you have checked that it can fail.**
 
 ---
 
@@ -176,6 +188,14 @@ day7/              the golden model and verifier
   verify.py          compares every layer against NumPy
   MODEL_FORMAT.md    byte-level format spec
   vhdl_vectors/      int8 test vectors for the hardware testbench
+
+vhdl/              hardware — 4 units, 3 testbenches, 407 assertions
+  cnn_types.vhd      shared array types
+  mac_unit.vhd       int8 x int8 -> int32, sequential
+  relu_int8.vhd      max(zero_point, x), combinational
+  requantize.vhd     fixed-point multiply + shift, saturating
+  conv3x3.vhd        nine parallel multipliers + adder tree
+  tb_conv3x3.vhd     reads day7/vhdl_vectors/, checks 384 outputs
 ```
 
 Each day folder holds heavily commented source (23–32% comments) plus a

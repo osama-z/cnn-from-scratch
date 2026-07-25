@@ -375,7 +375,7 @@ If you remember one thing, remember this:
 Day 5   a comment you have to remember              (C)
 Day 6   a type the compiler enforces                (C++ AccumTraits)
 Day 7   48,387 — the peak, measured on real data    (golden model)
-Phase 1 a 32-bit accumulator register               (VHDL)
+VHDL    a 32-bit register, 384/384 verified        (hardware)
 ```
 
 One rule, four levels of abstraction, each enforcing it more strongly than the last.

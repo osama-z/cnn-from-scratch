@@ -280,17 +280,98 @@ Mutations that were caught:
 
 ---
 
-## 12. Next
+## 12. `conv3x3` — the argument for FPGA acceleration, in one file
 
-- [x] `mac_unit.vhd` — int8 × int8 → int32, verified against the golden model
-- [x] `relu_int8.vhd` — `max(zero_point, x)`, mutation-tested
-- [x] `requantize.vhd` — fixed-point multiplier + shift, saturating
-- [ ] `conv3x3_parallel.vhd` — nine MACs, verified against `image*_conv_acc_int32.txt`
+```vhdl
+for i in 0 to 8 loop
+    sum := sum + resize(window(i) * kernel(i), ACC_WIDTH);
+end loop;
+```
 
-Everything needed for that last step now exists: the MAC does the arithmetic, the
-requantizer scales it, ReLU clamps it, and `day7/vhdl_vectors/` holds 128 expected
-outputs per image. `export_weights.py` wrote those when the golden model was
-built — which was the entire reason for building it first.
+**That loop is not a loop.** The synthesiser *unrolls* it into **nine parallel
+multipliers and an adder tree**. It describes structure, not time — the single
+biggest mental shift coming from software.
+
+| | Multipliers | Latency per output pixel |
+|---|---|---|
+| C on Cortex-M4 | 1, reused 9 times | ~9 cycles minimum |
+| This VHDL | **9, used once** | **1 cycle** |
+
+Same arithmetic, one ninth the latency. That is the entire case for FPGA
+acceleration, and you can now point at the file that demonstrates it.
+
+### Why fully parallel, no line buffer
+
+A production engine adds a line buffer so pixels stream in one at a time and
+windows form on the fly, saving input bandwidth. Real optimisation, separate
+problem. This version takes the window as a port.
+
+Deliberately the simpler design — because **it still verifies bit-exactly**, and
+a verified simple engine is worth more than an unverified clever one. The line
+buffer can be added later without touching this arithmetic.
+
+---
+
+## 13. 🏆 Golden model verification — 384/384
+
+`tb_conv3x3` reads the exact files `day7/export_weights.py` wrote and checks
+**every** convolution output:
+
+```text
+--- tb_conv3x3 (golden model) ---
+    loaded 18 int8 weights
+    image 0 done
+    image 1 done
+    image 2 done
+    comparisons: 384
+ALL 384 OUTPUTS MATCH - VHDL conv3x3 == NumPy == C == C++
+```
+
+2 filters × 8×8 pixels × 3 images = **384 independent comparisons** between
+hand-written RTL and the NumPy reference that C and C++ already match to 1.2e-10.
+
+**Why read files instead of hardcoding expected values?** Hardcoded tables encode
+the author's *belief* about what is correct. Reading the reference's own output
+means regenerating the model regenerates the test, and there is exactly **one**
+definition of correct in the whole project. This is standard hardware
+verification practice — RTL is checked against a C or Python reference model,
+never against hand-computed tables.
+
+### Mutation-tested, like everything else
+
+| Injected bug | Caught |
+|---|---|
+| Loop `0 to 7` — drop one of nine multiplies | `image 0 f0 (y=3,x=0): got 16129, expected 32258` |
+| Pad with 1 instead of 0 | `image 0 f0 (y=0,x=0): got -254, expected 0` |
+| Transpose the window indexing | `image 0 f0 (y=0,x=3): got 16129, expected 0` |
+
+Each names the exact pixel. That precision is why the testbench is worth having.
+
+---
+
+## 14. Phase 1 complete
+
+- [x] `cnn_types.vhd` — shared array types
+- [x] `mac_unit.vhd` — int8 × int8 → int32, sequential, verified at 48,387
+- [x] `relu_int8.vhd` — `max(zero_point, x)`, combinational, mutation-tested
+- [x] `requantize.vhd` — fixed-point multiply + shift, saturating
+- [x] `conv3x3.vhd` — **384/384 against the golden model**
+
+```text
+4 units, all pass GHDL --synth
+3 testbenches, 407 assertions total, all passing
+```
+
+**Optional next steps**, none required for the story to hold:
+
+- `line_buffer.vhd` — stream a full image instead of pre-formed windows
+- Vivado synthesis for real LUT / DSP / Fmax numbers *(needs the free Vivado ML
+  Standard; no board required)*
+- Pipeline the adder tree to raise Fmax once it becomes the critical path
+
+The claim is already complete and verified: **the same convolutional network,
+implemented from NumPy down to register-transfer level, agreeing bit-for-bit at
+every layer.**
 
 ---
 
