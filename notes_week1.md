@@ -228,8 +228,8 @@ localizes it: **the first diverging layer is where the bug lives.**
 bit-identity across languages would be *wrong*. 1e-10 = agreement.
 
 **VHDL bridge:** `vhdl_vectors/` holds int8 images, weights, and expected int32
-conv accumulators. **Peak accumulator = 24,384** — Day 5's overflow rule
-*measured*: doesn't fit int8 (max 127), needs int32. Your August testbench
+conv accumulators. **Peak accumulator = 48,387** — Day 5's overflow rule
+*measured*: needs 17 bits signed, so int8 (127) and even int16 overflow. int32 it is. Your August testbench
 compares against these exact files.
 
 ---
@@ -280,6 +280,6 @@ int8 × int8 overflows → you must accumulate in int32
 
   Day 5   a comment you remember          (C)
   Day 6   a type the compiler enforces    (C++ traits)
-  Day 7   24,384 — measured on real data  (golden model)
+  Day 7   48,387 — measured on real data  (golden model)
   Phase 1 a 32-bit register               (VHDL)
 ```

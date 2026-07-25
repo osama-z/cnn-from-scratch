@@ -153,11 +153,12 @@ that comparison lives in Day 6's `templated_cnn.cpp`, not here.)*
 quantized to int8, plus the **expected int32 accumulator** for the convolution.
 
 ```text
-    peak |int32 accumulator| = 24,384
+    peak |int32 accumulator| = 48,387  (17 bits signed)
 ```
 
-That number is **Day 5's overflow rule, measured on real data.** 24,384 does not
-fit in int8 (max 127); it needs int32. When your VHDL `conv3x3` engine runs in
+That number is **Day 5's overflow rule, measured on real data.** 48,387 needs 17
+bits plus a sign bit — so it overflows int8 (127) *and* int16 (32,767). int32 is
+not conservatism, it is the measured requirement. When your VHDL `conv3x3` engine runs in
 August, its accumulator register must hold this, and the testbench will compare
 against `image*_conv_acc_int32.txt` — these exact files.
 

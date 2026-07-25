@@ -314,6 +314,7 @@ def write_vhdl_vectors(outdir: Path, imgs, W):
     # Only the first three images. Image 3 is a float-path stability probe with
     # amplitude 60, which would simply saturate to 127 under this 0..10 scale
     # and tell the hardware nothing it does not already learn from image 0.
+    peak = 0            # tracked ACROSS all images, not just the last one
     for i in range(3):
         q_i = np.clip(np.round(imgs[i] / i_scale), -128, 127).astype(np.int32)
         (outdir / f"image{i}_int8.txt").write_text(
@@ -326,16 +327,24 @@ def write_vhdl_vectors(outdir: Path, imgs, W):
         (outdir / f"image{i}_conv_acc_int32.txt").write_text(
             "\n".join(str(int(v)) for v in acc.reshape(-1)) + "\n")
 
-    peak = int(np.abs(acc).max())
+        peak = max(peak, int(np.abs(acc).max()))
+
+    # Bits actually needed: sign bit + magnitude. This is the number that sizes
+    # the accumulator register in the Phase 1 VHDL datapath.
+    bits = int(peak).bit_length() + 1
+
     (outdir / "quant_params.txt").write_text(
         f"# symmetric quantization, zero_point = 0\n"
         f"input_scale  {i_scale:.9g}\n"
-        f"weight_scale {w_scale:.9g}\n")
+        f"weight_scale {w_scale:.9g}\n"
+        f"peak_abs_accumulator {peak}\n"
+        f"accumulator_bits_required {bits}\n")
 
     print(f"  wrote {outdir.name}/: int8 vectors for the Phase 1 VHDL testbench")
-    print(f"    peak |int32 accumulator| = {peak}  "
-          f"({'fits' if peak < 2**31 else 'OVERFLOWS'} int32; "
-          f"would {'NOT fit' if peak > 127 else 'fit'} int8 -- Day 5's rule, measured)")
+    print(f"    peak |int32 accumulator| = {peak} across all images "
+          f"-> needs {bits} bits signed")
+    print(f"    int8 holds +/-127, so this {'does NOT fit' if peak > 127 else 'fits'} "
+          f"in int8 -- Day 5's rule, measured")
 
 
 # =====================================================================

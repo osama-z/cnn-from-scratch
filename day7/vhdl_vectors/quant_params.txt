@@ -1,3 +1,5 @@
 # symmetric quantization, zero_point = 0
 input_scale  0.0787401575
 weight_scale 0.00787401575
+peak_abs_accumulator 48387
+accumulator_bits_required 17

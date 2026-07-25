@@ -69,7 +69,7 @@ version, a checksum, and 4-byte alignment for zero-copy loading — which is exa
 ONNX and TFLite are underneath. The verifier compares every intermediate layer, not just
 the final prediction, so the first layer that diverges pinpoints the bug; NumPy, C, and C++
 now agree to within 1e-10, and the same script emits int8 reference vectors (peak int32
-accumulator = 24,384, Day 5's overflow rule measured on real data) for the VHDL testbench I
+accumulator = 48,387 — 17 bits signed, so even int16 would overflow) for the VHDL testbench I
 build in Phase 1.
 
 ---
