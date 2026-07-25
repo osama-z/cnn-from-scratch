@@ -172,8 +172,20 @@ every implementation you build for the next four months.
 |---|---|
 | `export_weights.py` | Writes `weights.bin`, the NumPy reference, and VHDL vectors. Contains the reference implementation. |
 | `model_io.h` | Header-only loader, shared by C and C++. |
+| `cnn.hpp` | The reusable float engine — layer classes written **once**. |
 | `golden_c.c` | Day 4's C, loading weights instead of generating them. |
-| `golden_cpp.cpp` | Day 6's C++ classes, loading weights. |
+| `golden_cpp.cpp` | Wires the loaded weights into `cnn.hpp` and emits the trace. |
+
+> **Why `cnn.hpp` exists.** The layer classes were originally copy-pasted into
+> `golden_cpp.cpp`. Fine once, a liability twice: fix a bug in one `Conv2D` and the
+> other copy silently keeps it — precisely the divergence this whole day exists to
+> catch. Extracting them cut `golden_cpp.cpp` from 193 lines to 78.
+>
+> **`day6/` was deliberately left alone.** Its files spell the classes out in full
+> because they are *teaching* artifacts — you read them to learn virtual dispatch and
+> templates, and Day 6's entire lesson is seeing the same network re-expressed. Making
+> them `#include` a header would delete the lesson. Teaching code is meant to be read;
+> engine code is meant to be reused. Do not merge the two roles.
 | `verify.py` | Runs both binaries, compares every layer to NumPy. |
 | `MODEL_FORMAT.md` | Byte-level format spec. |
 | `weights.bin` | The golden model. 636 bytes. |

@@ -19,7 +19,7 @@ Next             ░░░░░░░░░░░░░░░░░░░░  P
 ```
 
 > 📌 Following **ROADMAP.md v6.0** (rewritten July 23, 2026) — deadline-driven,
-> with VHDL as the spine. The original 6-month plan is kept at `ROADMAP_v5_archive.md`.
+> with VHDL as the spine.
 
 ---
 

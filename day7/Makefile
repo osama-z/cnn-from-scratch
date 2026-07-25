@@ -9,7 +9,7 @@ all: golden_c golden_cpp
 golden_c: golden_c.c model_io.h
 	$(CC) $(CFLAGS) -o $@ golden_c.c -lm
 
-golden_cpp: golden_cpp.cpp model_io.h
+golden_cpp: golden_cpp.cpp model_io.h cnn.hpp
 	$(CXX) $(CXXFLAGS) -o $@ golden_cpp.cpp
 
 # Regenerate the golden model and reference vectors from the NumPy source.
@@ -23,7 +23,7 @@ verify: all
 
 # The loader mallocs the whole file and layers borrow into it; prove nothing
 # leaks and no read runs off the end of the buffer.
-asan: golden_c.c golden_cpp.cpp model_io.h
+asan: golden_c.c golden_cpp.cpp model_io.h cnn.hpp
 	$(CC)  $(CFLAGS)   $(ASAN) -o golden_c_asan   golden_c.c -lm
 	$(CXX) $(CXXFLAGS) $(ASAN) -o golden_cpp_asan golden_cpp.cpp
 	@test -f weights.bin || python3 export_weights.py
