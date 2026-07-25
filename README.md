@@ -1,83 +1,188 @@
-# 🚀 CNN From Scratch — Python → C → ARM → FPGA → Drone
+# CNN From Scratch — NumPy → C → C++ → int8 → VHDL
 
-> Building a real-time human detection system from absolute scratch.
-> No frameworks until Month 2. Pure math, pure understanding.
+**One convolutional neural network, implemented five ways, every output verified identical.**
+
+No frameworks. Every operation — convolution, backpropagation, quantization, memory
+layout — written from first principles and checked against a single reference model.
+
+```text
+        NumPy   ──►    C    ──►   C++   ──►   int8   ──►   VHDL
+      days 1-3       day 4       day 6        day 5       in progress
+          │            │           │            │            │
+          └────────────┴───────────┴────────────┴────────────┘
+                                  │
+                            weights.bin
+                    one frozen set of numbers that
+                     every implementation loads
+```
+
+```console
+$ cd day7 && make verify
+
+Golden-model verification
+  comparing every layer of 4 images against the NumPy reference
+    [C  ] PASS  (largest deviation 1.20e-10)
+    [C++] PASS  (largest deviation 1.20e-10)
+
+  RESULT: golden model verified. NumPy = C = C++, bit-close.
+```
 
 **Author:** Osama Z.
-**Profile:** Hardware Engineer mastering AI — VHDL + C + Python + Neural Networks
+**Focus:** embedded AI · quantization · hardware-software co-design
 
 ---
 
-## 📊 Progress
+## Results
+
+| | Measured |
+|---|---|
+| MNIST test accuracy (NumPy, from scratch) | **95.0%** on 10,000 unseen digits |
+| Cross-implementation agreement | **1.2e-10** across every layer of every image |
+| C inference throughput | **16,000+ FPS**, 1.4 KB working memory |
+| int8 vs float32 | **4× smaller** — all 119 parameters: 476 B → 119 B; ~1.3 pp probability error |
+| Peak int32 conv accumulator | **48,387** — needs 17 bits signed, so int8 *and* int16 overflow |
+| Memory safety | ASan + UBSan clean on all binaries, zero `free()` in the C++ |
+
+---
+
+## Why this exists
+
+A framework can train a network in ten lines. It cannot tell you *why* `int8 × int8`
+overflows, why an unaligned float load faults on ARM, or why your C and C++ builds
+silently disagreed. This project answers those questions by building the thing.
+
+The single thread running through all of it:
 
 ```text
-Phase 0: Foundation  ████████████████████  COMPLETE (Jul 23)
+        int8 × int8 overflows → you MUST accumulate in int32
 
-Week 1 (Python)  ████████████████████  DONE — NumPy CNN + 95% MNIST
-Week 2 (C / C++) ████████████████████  DONE — templates, RAII, golden model
-Next             ░░░░░░░░░░░░░░░░░░░░  Phase 1: VHDL (the differentiator)
+Day 5    a comment you have to remember             (C)
+Day 6    a type the compiler enforces               (C++ AccumTraits)
+Day 7    48,387 — the peak, measured on real data   (golden model)
+VHDL     a 17-bit-minimum accumulator register      (hardware)
 ```
 
-> 📌 Following **ROADMAP.md v6.0** (rewritten July 23, 2026) — deadline-driven,
-> with VHDL as the spine.
+One rule, four levels of abstraction, each enforcing it more strongly than the last.
 
 ---
 
-## 🏆 Key Results
+## Where to start
 
-| Day | Achievement | Numbers |
-|-----|------------|---------|
-| Day 1 | CNN forward pass from scratch | Conv→ReLU→Pool→Dense→Softmax |
-| Day 2 | Training loop with 3 optimizers | 97%→100% on toy data |
-| Day 3 | MNIST digit classification | **95% test accuracy** |
-| Day 4 | Full CNN rewritten in C | **16,000+ FPS**, 1.4 KB memory |
-| Day 5 | int8 quantization | **4x smaller**, 20x faster |
-| Day 6 | C++ rewrite: RAII + templates | float & int8 from **one source**, 3/3 predictions agree |
-| Day 7 | Golden model + verifier | **NumPy = C = C++** to 1e-10, hand-rolled model format |
+**New here? Read in this order:**
 
----
+| # | File | What you get |
+|---|---|---|
+| 1 | **[UNDERSTAND.md](UNDERSTAND.md)** | Every design decision and why the alternative was rejected. One number traced through all six layers with real output. Start here. |
+| 2 | [day7/README_explanation.md](day7/README_explanation.md) | The verification story — and the bug that was hiding in the repo |
+| 3 | [day6/README_explanation.md](day6/README_explanation.md) | RAII, virtual dispatch, and why `Tensor<int8_t>` alone recreates an overflow bug |
+| 4 | [notes_week1.md](notes_week1.md) | Formula cheat sheet — every equation on one page |
 
-## 📁 Structure
-
-```text
-projects/
-├── README.md              ← This file
-├── ROADMAP.md             ← Full 6-month plan (v4.0 — CE tailored)
-├── daily_log.md           ← Learning journal
-├── notes_week1.md         ← Formula cheat sheet
-├── day1/                  ✅ CNN Forward Pass (Python)
-├── day2/                  ✅ Loss + Backprop + Training (Python)
-├── day3/                  ✅ MNIST 95% Accuracy (Python)
-├── day4/                  ✅ CNN Forward Pass (C)
-├── day5/                  ✅ Fixed-Point int8 (C)
-├── day6/                  ✅ C++ : RAII + Templates
-└── day7/                  ✅ Golden Model : NumPy = C = C++ verified
-```
-
-Each day folder contains:
-- **Code files** — Heavily commented Python/C
-- **README_explanation.md** — Deep visual explanation with ASCII diagrams
+**Want the code?** `day7/cnn.hpp` is the cleanest expression of the engine.
+`day4/cnn_forward.c` is the one that teaches pointers.
 
 ---
 
-## 🛠️ How to Run
+## What's in each day
+
+| Day | Language | Builds | Deep dive |
+|---|---|---|---|
+| **1** | Python/NumPy | Convolution, ReLU, MaxPool, Dense, Softmax from nothing | [explanation](day1/README_explanation.md) |
+| **2** | Python/NumPy | Cross-entropy, backprop by chain rule, SGD/Momentum/Adam | [explanation](day2/README_explanation.md) |
+| **3** | Python/NumPy | MNIST at 95%, IDX parsing, train/test discipline | [explanation](day3/README_explanation.md) |
+| **4** | C | Same network, `float*` and 1D indexing, manual `malloc`/`free` | [explanation](day4/README_explanation.md) |
+| **5** | C | int8 quantization, scale/zero-point, the int32 accumulator rule | [explanation](day5/README_explanation.md) |
+| **6** | C++ | Classes, RAII, templates — float and int8 from one source | [explanation](day6/README_explanation.md) |
+| **7** | Python + C + C++ | The golden model, a hand-rolled binary format, layer-by-layer verification | [explanation](day7/README_explanation.md) · [format spec](day7/MODEL_FORMAT.md) |
+| **next** | VHDL | MAC unit and conv engine, verified against the golden model | — |
+
+---
+
+## Run it
 
 ```bash
-# Python (Days 1-3)
-cd ai-workspace && source venv/bin/activate
-cd projects/day3 && python part1_mnist_classifier.py
+# Verify all implementations agree (the headline claim)
+cd day7 && make verify
 
-# C (Days 4-5)
-cd projects/day4 && make && ./cnn_forward
-cd projects/day5 && make && ./fixed_point
+# Prove the loader has no leaks and no buffer overruns
+cd day7 && make asan
 
-# C++ (Day 6)
-cd projects/day6 && make run    # both: OOP version, then float-vs-int8
-make asan                       # prove RAII: zero leaks, zero UB
-make asm                        # prove `if constexpr` costs nothing
+# Prove a corrupted model file is rejected, not trusted
+cd day7 && make test-robust
 
-# Golden model (Day 7)
-cd projects/day7 && make verify # prove NumPy = C = C++, layer by layer
-make asan                       # prove the loader has no leaks/overruns
-make test-robust                # prove a corrupt file is rejected
+# C++: object-oriented version, then float-vs-int8 from one templated source
+cd day6 && make run
+cd day6 && make asan     # RAII proof: zero leaks, zero free() in the source
+cd day6 && make asm      # `if constexpr` proof: the two builds share no arithmetic
+
+# Earlier days
+cd day4 && make && ./cnn_forward       # C, ~16k FPS
+cd day5 && make && ./fixed_point       # int8 quantization
+cd day1 && python part1_convolution.py # the math, visualized
 ```
+
+MNIST archives are not in the repo (11.5 MB). `day3/README_explanation.md` covers
+re-downloading them.
+
+---
+
+## Two things worth knowing before you read the output
+
+**The class labels are meaningless, deliberately.** The convolution kernels are
+hand-designed edge detectors, but the Dense layer is generated and never trained — so it
+maps good features to arbitrary classes. This project verifies that five implementations
+*agree*, not that the network is accurate. Training is Day 2's subject.
+
+**"Verified" means bit-close, not bit-identical.** The measured deviation is 1.2e-10
+against a 1e-4 tolerance. `expf()`, NumPy's `exp()`, and fused multiply-add round
+differently; demanding exactness across languages and compilers would be wrong.
+
+---
+
+## Verification approach
+
+The interesting part isn't that the tests pass — it's that they were checked for the
+ability to fail. Bugs were deliberately injected to see whether the suite would notice:
+
+| Injected bug | Caught? |
+|---|---|
+| Off-by-one in convolution padding | ✅ first divergence at `conv` |
+| Dense weight layout transposed | ✅ first divergence at `dense` |
+| Softmax loses its numerical-stability guard | ❌ **passed — a hole in the test** |
+
+The third exposed a gap: the original images only drove logits to ~16.8, and `exp(16.8)`
+never overflows, so the guard was never exercised. A fourth test image at amplitude 60
+(logit ≈ 100 → `exp` → `inf` → `NaN`) closed it.
+
+**A passing suite is evidence only once you have checked that it can fail.** The same
+reasoning applies to the RTL testbench coming next.
+
+---
+
+## Repo layout
+
+```text
+UNDERSTAND.md      every decision, and why — start here
+ROADMAP.md         the plan and its revisions
+notes_week1.md     formula cheat sheet
+daily_log.md       what was learned, day by day
+
+day1/ day2/ day3/  Python — the math
+day4/ day5/        C — memory and fixed-point
+day6/              C++ — structure without cost
+day7/              the golden model and verifier
+  cnn.hpp            the reusable float engine
+  model_io.h         header-only loader, shared by C and C++
+  export_weights.py  writes weights.bin + reference outputs + VHDL vectors
+  verify.py          compares every layer against NumPy
+  MODEL_FORMAT.md    byte-level format spec
+  vhdl_vectors/      int8 test vectors for the hardware testbench
+```
+
+Each day folder holds heavily commented source (23–32% comments) plus a
+`README_explanation.md` deriving the concepts from first principles.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
