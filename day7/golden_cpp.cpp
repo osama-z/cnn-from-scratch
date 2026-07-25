@@ -23,6 +23,7 @@
 constexpr int IN_CH = 1, OUT_CH = 2, KSIZE = 3;
 constexpr int IMG = 8, POOL = 2, NCLS = 3;
 constexpr int FLAT = OUT_CH * (IMG / POOL) * (IMG / POOL);   // 32
+constexpr int NIMG = 4;   // 3 originals + the softmax stability probe
 
 static void emit(int img, const std::string& layer, const cnn::Tensor& t) {
     std::printf("TENSOR %d %s %d\n", img, layer.c_str(), t.size());
@@ -60,12 +61,16 @@ int main(int argc, char** argv) {
     net.add(std::make_unique<cnn::Softmax>());
 
     // Three test images, identical to export_weights.py's build_images().
-    std::vector<cnn::Tensor> images(3, cnn::Tensor(IN_CH, IMG, IMG));
+    // Image 3 is the softmax stability probe: amplitude 60 drives the largest
+    // logit to ~100, and exp(100) overflows float32 unless the max is
+    // subtracted first. See the comment in export_weights.py.
+    std::vector<cnn::Tensor> images(NIMG, cnn::Tensor(IN_CH, IMG, IMG));
     for (int y = 4; y < 8; ++y) for (int x = 0; x < 8; ++x) images[0](0, y, x) = 10.0f;
     for (int y = 0; y < 8; ++y) for (int x = 4; x < 8; ++x) images[1](0, y, x) = 10.0f;
     for (int i = 0; i < images[2].size(); ++i)              images[2][i]       = 5.0f;
+    for (int y = 4; y < 8; ++y) for (int x = 0; x < 8; ++x) images[3](0, y, x) = 60.0f;
 
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < NIMG; ++i) {
         emit(i, "input", images[i]);
         net.forward_traced(images[i],
                            [i](const std::string& name, const cnn::Tensor& t) {

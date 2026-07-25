@@ -156,12 +156,32 @@ def build_weights() -> dict[str, np.ndarray]:
 
 
 def build_images() -> tuple[np.ndarray, list[str]]:
-    """The same three 8x8 test images used since Day 1."""
-    imgs = np.zeros((3, IN_CH, IMG, IMG), dtype=np.float32)
+    """
+    The three 8x8 test images used since Day 1, plus one stability probe.
+
+    WHY THE FOURTH IMAGE EXISTS
+    ---------------------------
+    Mutation testing found a hole in this suite. Deleting the max-subtraction
+    trick from softmax -- i.e. computing exp(x) instead of exp(x - max) --
+    still PASSED every check, because the original three images only drive the
+    logits to ~16.8, and exp(16.8) = 2e7 is nowhere near the float32 ceiling of
+    3.4e38. The guard was never exercised, so the suite could not tell whether
+    it was there.
+
+    A test that cannot fail is not a test. Image 3 is a horizontal edge at
+    amplitude 60, which drives the largest logit to ~100. exp(100) overflows
+    float32 to +inf, and the subsequent inf/inf produces NaN. Any
+    implementation that drops the stability trick now fails loudly here.
+
+    This is the reason to mutation-test a verification suite rather than trust
+    it: the code was correct, but the evidence for it was not.
+    """
+    imgs = np.zeros((4, IN_CH, IMG, IMG), dtype=np.float32)
     imgs[0, 0, 4:, :] = 10.0      # bottom half bright -> horizontal edge
     imgs[1, 0, :, 4:] = 10.0      # right half bright  -> vertical edge
     imgs[2, 0, :, :]  = 5.0       # flat               -> uniform
-    return imgs, ["horizontal_edge", "vertical_edge", "uniform"]
+    imgs[3, 0, 4:, :] = 60.0      # same edge, 6x amplitude -> softmax overflow probe
+    return imgs, ["horizontal_edge", "vertical_edge", "uniform", "saturated_edge"]
 
 
 # =====================================================================
@@ -291,7 +311,10 @@ def write_vhdl_vectors(outdir: Path, imgs, W):
     (outdir / "conv_weights_int8.txt").write_text(
         "\n".join(str(int(v)) for v in q_w.reshape(-1)) + "\n")
 
-    for i in range(imgs.shape[0]):
+    # Only the first three images. Image 3 is a float-path stability probe with
+    # amplitude 60, which would simply saturate to 127 under this 0..10 scale
+    # and tell the hardware nothing it does not already learn from image 0.
+    for i in range(3):
         q_i = np.clip(np.round(imgs[i] / i_scale), -128, 127).astype(np.int32)
         (outdir / f"image{i}_int8.txt").write_text(
             "\n".join(str(int(v)) for v in q_i.reshape(-1)) + "\n")

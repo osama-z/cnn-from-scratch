@@ -32,6 +32,7 @@
 #define POOL    2
 #define NCLS    3
 #define FLAT    (OUT_CH * (IMG / POOL) * (IMG / POOL))   /* 32 */
+#define NIMG    4                                        /* 3 originals + stability probe */
 
 /* ---------------------------------------------------------------- */
 /* Layers -- identical math to day4/cnn_forward.c                    */
@@ -134,18 +135,22 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    /* Three test images, identical to export_weights.py's build_images() */
-    float images[3][IN_CH * IMG * IMG];
+    /* Test images, identical to export_weights.py's build_images().
+     * Image 3 is the softmax stability probe: amplitude 60 drives the largest
+     * logit to ~100, and exp(100) overflows float32 unless the max is
+     * subtracted first. See the comment in export_weights.py. */
+    float images[NIMG][IN_CH * IMG * IMG];
     memset(images, 0, sizeof(images));
     for (int y = 4; y < 8; y++) for (int x = 0; x < 8; x++) images[0][y * IMG + x] = 10.0f;
     for (int y = 0; y < 8; y++) for (int x = 4; x < 8; x++) images[1][y * IMG + x] = 10.0f;
     for (int i = 0; i < IN_CH * IMG * IMG; i++)                images[2][i]       = 5.0f;
+    for (int y = 4; y < 8; y++) for (int x = 0; x < 8; x++) images[3][y * IMG + x] = 60.0f;
 
     float conv_out[OUT_CH * IMG * IMG];
     float pool_out[FLAT];
     float dense_out[NCLS];
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < NIMG; i++) {
         emit(i, "input", images[i], IN_CH * IMG * IMG);
 
         conv2d(images[i], IN_CH, IMG, IMG, cw->data, cb->data, OUT_CH, conv_out);

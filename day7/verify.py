@@ -69,11 +69,17 @@ def run(binary: str) -> dict[tuple[int, str], np.ndarray]:
     return parse_tensors(res.stdout)
 
 
+def n_images(ref) -> int:
+    """Derive the image count from the reference rather than hardcoding it,
+    so adding a test case means editing export_weights.py only."""
+    return max(img for img, _ in ref) + 1
+
+
 def compare(name: str, ref, got) -> bool:
     ok = True
     worst = 0.0
     worst_where = None
-    for img in range(3):
+    for img in range(n_images(ref)):
         for layer in LAYERS:
             key = (img, layer)
             if key not in got:
@@ -106,10 +112,11 @@ def main() -> int:
 
     print("Golden-model verification")
     print("=" * 60)
-    print(f"  tolerance: atol={ATOL}, rtol={RTOL}")
-    print(f"  comparing every layer of 3 images against the NumPy reference\n")
-
     ref = load_reference()
+    n = n_images(ref)
+    print(f"  tolerance: atol={ATOL}, rtol={RTOL}")
+    print(f"  comparing every layer of {n} images against the NumPy reference\n")
+
     results = {
         "C   (golden_c)":   compare("C  ", ref, run("golden_c")),
         "C++ (golden_cpp)": compare("C++", ref, run("golden_cpp")),
@@ -123,7 +130,7 @@ def main() -> int:
 
     # The final predictions, side by side, as the human-readable payoff.
     print("\n  Predictions (all implementations, being identical, agree):")
-    for img in range(3):
+    for img in range(n):
         p = ref[(img, "softmax")]
         print(f"    image {img}: [{', '.join(f'{v*100:5.1f}%' for v in p)}]  "
               f"class {int(p.argmax())}")

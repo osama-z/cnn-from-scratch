@@ -166,6 +166,45 @@ every implementation you build for the next four months.
 
 ---
 
+## 6b. Testing the test: mutation testing
+
+A verification suite that always passes proves nothing. So the suite was
+deliberately attacked — bugs were injected into `golden_c.c` to check the
+verifier would notice:
+
+| Injected bug | Result |
+|---|---|
+| Off-by-one in conv padding (`iy < H` → `iy <= H`) | ✅ Caught, first divergence at `conv` |
+| Dense weights transposed (`w[i*out+j]` → `w[j*in+i]`) | ✅ Caught, first divergence at `dense` |
+| Softmax loses `- max` stability guard | ❌ **PASSED — bug not detected** |
+
+The third one is the interesting failure, and it was a hole in the *test*, not
+the code. The guard was present and correct, but the three original test images
+only drove the logits to ~16.8:
+
+```text
+exp(16.81)  = 2.0e+07        float32 max = 3.4e+38
+overflow needs a logit > 88.7
+```
+
+`exp(16.8)` never overflows, so removing the guard changed nothing and the suite
+could not tell whether it was there.
+
+**Fix:** a fourth test image — the same horizontal edge at amplitude 60, driving
+the largest logit to ~100. `exp(100)` overflows float32 to `+inf`, and `inf/inf`
+gives `NaN`. Re-running the mutation now:
+
+```text
+[C] DIVERGES at image 3 'softmax' elem 0: ref=1 got=nan
+```
+
+The lesson generalizes past this repo: **a passing test suite is evidence only if
+you have checked that it can fail.** Mutation testing is how you check. The same
+reasoning applies to an RTL testbench in Phase 1 — a testbench that passes on
+every possible implementation is not testing anything.
+
+---
+
 ## 7. Files
 
 | File | Role |
