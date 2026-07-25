@@ -38,3 +38,8 @@ day3/mnist_data/
 
 # Claude Code machine-local settings
 .claude/settings.local.json
+
+# GHDL build artifacts
+vhdl/build/
+*.ghw
+*.cf
