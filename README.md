@@ -42,6 +42,8 @@ Golden-model verification
 | int8 vs float32 | **4× smaller** — all 119 parameters: 476 B → 119 B; ~1.3 pp probability error |
 | Peak int32 conv accumulator | **48,387** — needs 17 bits signed, so int8 *and* int16 overflow |
 | VHDL conv engine vs NumPy | **384/384 outputs match** — hand-written RTL, bit-exact |
+| VHDL streaming datapath | **384/384** with windows formed in hardware from a raster stream |
+| Streaming buffer cost | **2W+3 = 19 bytes** instead of W×H — 540× saving at 1920-wide video |
 | Memory safety | ASan + UBSan clean on all binaries, zero `free()` in the C++ |
 
 ---
@@ -94,7 +96,7 @@ One rule, four levels of abstraction, each enforcing it more strongly than the l
 | **5** | C | int8 quantization, scale/zero-point, the int32 accumulator rule | [explanation](day5/README_explanation.md) |
 | **6** | C++ | Classes, RAII, templates — float and int8 from one source | [explanation](day6/README_explanation.md) |
 | **7** | Python + C + C++ | The golden model, a hand-rolled binary format, layer-by-layer verification | [explanation](day7/README_explanation.md) · [format spec](day7/MODEL_FORMAT.md) |
-| **VHDL** | VHDL | MAC, ReLU, requantize, 3×3 conv engine — **384/384 vs the golden model** | [explanation](vhdl/README_explanation.md) |
+| **VHDL** | VHDL | MAC, ReLU, requantize, conv3×3, line buffer — **384/384 streamed vs the golden model** | [explanation](vhdl/README_explanation.md) |
 
 ---
 
@@ -115,9 +117,9 @@ cd day6 && make run
 cd day6 && make asan     # RAII proof: zero leaks, zero free() in the source
 cd day6 && make asm      # `if constexpr` proof: the two builds share no arithmetic
 
-# Hardware: 4 units, 3 testbenches, 407 assertions
-cd vhdl && make test     # includes 384 conv outputs vs the NumPy reference
-cd vhdl && make synth    # prove all 4 units are synthesisable circuits
+# Hardware: 5 units, 4 testbenches, 791 assertions
+cd vhdl && make test     # includes 768 conv outputs vs the NumPy reference
+cd vhdl && make synth    # netlists confirm 9 multipliers in conv3x3
 cd vhdl && make wave     # gtkwave build/mac.ghw
 
 # Earlier days
@@ -189,13 +191,15 @@ day7/              the golden model and verifier
   MODEL_FORMAT.md    byte-level format spec
   vhdl_vectors/      int8 test vectors for the hardware testbench
 
-vhdl/              hardware — 4 units, 3 testbenches, 407 assertions
+vhdl/              hardware — 5 units, 4 testbenches, 791 assertions
   cnn_types.vhd      shared array types
   mac_unit.vhd       int8 x int8 -> int32, sequential
   relu_int8.vhd      max(zero_point, x), combinational
   requantize.vhd     fixed-point multiply + shift, saturating
   conv3x3.vhd        nine parallel multipliers + adder tree
+  line_buffer.vhd    2W+3 shift register, forms windows from a stream
   tb_conv3x3.vhd     reads day7/vhdl_vectors/, checks 384 outputs
+  tb_stream_conv.vhd full datapath, 384 outputs, windows built in HW
 ```
 
 Each day folder holds heavily commented source (23–32% comments) plus a

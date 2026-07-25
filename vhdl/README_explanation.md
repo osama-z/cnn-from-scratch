@@ -349,25 +349,137 @@ Each names the exact pixel. That precision is why the testbench is worth having.
 
 ---
 
-## 14. Phase 1 complete
+## 14. `line_buffer` — the idea that makes streaming possible
+
+conv3x3 needs nine pixels at once. A camera gives you **one at a time**, in
+raster order. Nothing gives you a window.
+
+The naive fix is to buffer the whole frame. The insight is that you never need
+more than **two rows plus three pixels**:
+
+```text
+buffer = 2 × IMG_WIDTH + 3          19 bytes for an 8-wide image
+     NOT IMG_WIDTH × IMG_HEIGHT     64 bytes
+```
+
+For 1920-wide video that's **3,843 bytes instead of 2 MB — a 540× saving.** This
+is the single most important structural idea in FPGA image processing, and the
+reason streaming architectures exist at all: 2 MB does not fit in a small FPGA's
+block RAM, but 3.8 KB does.
+
+### How the taps work
+
+One long shift register; every pixel shifts it by one. Nine fixed positions are
+tapped, and those taps *are* the window:
+
+```text
+sr(0)                        ← newest pixel
+sr(W)   sr(W+1)  sr(W+2)     ← W = IMG_WIDTH
+sr(2W)  sr(2W+1) sr(2W+2)    ← oldest pixel in the window
+
+tap for offset (dy,dx) = sr( (W+1) − dy·W − dx )
+```
+
+Check the corners: `(-1,-1) → sr(2W+2)` the oldest, `(+1,+1) → sr(0)` the newest,
+`(0,0) → sr(W+1)` the centre. **The centre trails the input by W+1 pixels** —
+that's the block's latency, and it's why the caller must keep clocking after the
+last real pixel to flush the final windows.
+
+### Padding in a stream is harder than in a buffer
+
+A frame buffer can just check indices. A shift register has no idea where the
+frame boundaries are, so this block tracks the centre's `(y,x)` and forces
+out-of-range taps to zero. That coordinate counter is what makes edge handling
+possible at all.
+
+---
+
+## 15. 🏆 The full streaming datapath — 384/384 again
+
+```text
+pix_in ──► [ line_buffer ] ──window──► [ conv3x3 ] ──acc──► check
+```
+
+```text
+--- tb_stream_conv (golden model, windows formed in HW) ---
+    buffer size = 2*W+3 = 19 bytes, NOT W*H = 64
+    image 0 streamed / image 1 streamed / image 2 streamed
+    comparisons: 384
+ALL 384 STREAMED OUTPUTS MATCH - full datapath == NumPy == C == C++
+```
+
+**Why this is a stronger result than §13.** `tb_conv3x3` proved the *arithmetic*
+with windows handed over pre-built. It said nothing about whether windows can be
+assembled from a camera-style stream — which is exactly where the real bugs live:
+off-by-one taps, wrong latency, mishandled edges, state leaking between rows.
+
+384/384 *through the line buffer* means the addressing is right too. The
+testbench also asserts that exactly `W×H` windows emerged, which catches a
+latency error even when every value that did emerge was correct.
+
+### Mutation results
+
+| Injected bug | Caught by |
+|---|---|
+| Tap formula off by one (`W+1` → `W+2`) | **GHDL bounds check**: `index (19) out of bounds (0 to 18)` |
+| Wrong latency (centre offset `W+1` → `W`) | `image 0 f0 (y=3,x=0): got 16129, expected 32258` |
+| Edge padding removed | `image 0 f0 (y=2,x=7): got 16129, expected 0` |
+
+The first one is worth pausing on. In C, `sr[19]` on a 19-element array **silently
+reads adjacent memory** — the classic buffer overrun, no warning, plausible
+garbage. VHDL's range-checked array types turn it into a hard error naming the
+exact index and line number.
+
+That is a genuine argument for strongly-typed hardware description: the same
+off-by-one that is a silent data corruption in C is a compile-or-run-time
+*refusal* here.
+
+---
+
+## 16. Synthesised resource cost
+
+`make synth` runs GHDL's synthesis pass and writes a netlist per unit. Counting
+what actually appears in them:
+
+| Unit | Multipliers | Adders | Sequential? |
+|---|---|---|---|
+| `mac_unit` | 1 | 1 | yes (accumulator register) |
+| `relu_int8` | 0 | 0 | no — **pure comparator + mux** |
+| `requantize` | 1 | 3 | no |
+| `conv3x3` | **9** | 9 | no |
+| `line_buffer` | 0 | 0 | yes (19-deep shift register) |
+
+**Nine multipliers in the conv3x3 netlist.** That is the unrolled loop, confirmed
+from synthesis output rather than asserted from the source. `relu_int8` having
+zero arithmetic confirms it really is just a mux.
+
+> Real LUT / DSP48 / Fmax numbers need vendor tooling — Vivado ML Standard is
+> free and needs no board. The netlist counts above are the structural truth;
+> Vivado would add the mapping to a specific device.
+
+---
+
+## 17. Phase 1 complete
 
 - [x] `cnn_types.vhd` — shared array types
 - [x] `mac_unit.vhd` — int8 × int8 → int32, sequential, verified at 48,387
 - [x] `relu_int8.vhd` — `max(zero_point, x)`, combinational, mutation-tested
 - [x] `requantize.vhd` — fixed-point multiply + shift, saturating
 - [x] `conv3x3.vhd` — **384/384 against the golden model**
+- [x] `line_buffer.vhd` — 2W+3 streaming buffer with edge padding
+- [x] **Full streaming datapath — 384/384 with windows formed in hardware**
 
 ```text
-4 units, all pass GHDL --synth
-3 testbenches, 407 assertions total, all passing
+5 units, all pass GHDL --synth
+4 testbenches, 791 assertions total, all passing
+9 multipliers confirmed in the conv3x3 netlist
 ```
 
-**Optional next steps**, none required for the story to hold:
+**Genuinely optional from here** — the claim is complete without any of it:
 
-- `line_buffer.vhd` — stream a full image instead of pre-formed windows
-- Vivado synthesis for real LUT / DSP / Fmax numbers *(needs the free Vivado ML
-  Standard; no board required)*
-- Pipeline the adder tree to raise Fmax once it becomes the critical path
+- Vivado ML Standard (free, no board) for device-mapped LUT / DSP48 / Fmax
+- Pipeline the adder tree once it becomes the critical path
+- Multi-channel support (currently 1 input channel; the C version generalises)
 
 The claim is already complete and verified: **the same convolutional network,
 implemented from NumPy down to register-transfer level, agreeing bit-for-bit at

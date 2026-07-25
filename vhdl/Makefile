@@ -16,8 +16,8 @@ STD       = --std=08
 WORKDIR   = build
 GHDLFLAGS = $(STD) --workdir=$(WORKDIR)
 
-SRC = cnn_types.vhd mac_unit.vhd relu_int8.vhd requantize.vhd conv3x3.vhd
-TB  = tb_mac_unit.vhd tb_relu_requant.vhd tb_conv3x3.vhd
+SRC = cnn_types.vhd mac_unit.vhd relu_int8.vhd requantize.vhd conv3x3.vhd line_buffer.vhd
+TB  = tb_mac_unit.vhd tb_relu_requant.vhd tb_conv3x3.vhd tb_stream_conv.vhd
 
 all: test
 
@@ -36,8 +36,10 @@ test: analyze
 	@$(GHDL) --elab-run $(GHDLFLAGS) tb_mac_unit --assert-level=error
 	@echo "--- tb_relu_requant ---"
 	@$(GHDL) --elab-run $(GHDLFLAGS) tb_relu_requant --assert-level=error
-	@echo "--- tb_conv3x3 (golden model) ---"
+	@echo "--- tb_conv3x3 (golden model, windows given) ---"
 	@$(GHDL) --elab-run $(GHDLFLAGS) tb_conv3x3 --assert-level=error
+	@echo "--- tb_stream_conv (golden model, windows formed in HW) ---"
+	@$(GHDL) --elab-run $(GHDLFLAGS) tb_stream_conv --assert-level=error
 
 # Same, but dump waveforms for GTKWave. Seeing the accumulator climb across
 # nine cycles is the fastest way to understand what a MAC actually does.
@@ -49,8 +51,8 @@ wave: analyze
 # simulate fine but cannot become hardware -- a genuinely useful gate before
 # taking anything near Vivado.
 synth: analyze
-	@for u in mac_unit relu_int8 requantize conv3x3; do \
-	  $(GHDL) --synth $(GHDLFLAGS) $$u > $(WORKDIR)/$$u_synth.vhd 2>/dev/null \
+	@for u in mac_unit relu_int8 requantize conv3x3 line_buffer; do \
+	  $(GHDL) --synth $(GHDLFLAGS) $$u > $(WORKDIR)/$${u}_synth.vhd 2>/dev/null \
 	    && echo "  synthesisable: $$u" || echo "  NOT SYNTHESISABLE: $$u"; \
 	done
 
