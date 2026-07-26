@@ -15,7 +15,7 @@ I built a convolutional neural network from absolute scratch using only NumPy. I
 ## Day 2 — May 28, 2026
 **Topic:** Loss Functions, Backpropagation & Training Loop (Python)
 
-I learned that Cross-Entropy loss is better than MSE for classification because its gradient is huge when the network is confidently wrong, forcing faster correction. Backpropagation uses the Chain Rule to assign "blame" to each weight by multiplying gradients backward through the network. I implemented three optimizers (SGD, Momentum, Adam) and watched my network go from 97% to 100% accuracy on toy data — the moment when random weights became "understanding."
+I learned that Cross-Entropy loss is better than MSE for classification because its gradient is huge when the network is confidently wrong, forcing faster correction. Backpropagation uses the Chain Rule to assign "blame" to each weight by multiplying gradients backward through the network. I implemented three optimizers (SGD, Momentum, Adam) and watched my network go from **3.3% to 100%** accuracy on toy data — the moment when random weights became "understanding." (I originally recorded this as 97%→100%, which was reading the accuracy averaged *during* the first epoch, after 300 weight updates had already happened, rather than the true untrained baseline.)
 
 ---
 

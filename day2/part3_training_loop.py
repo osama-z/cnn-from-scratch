@@ -305,6 +305,17 @@ loss_history = []
 acc_history = []
 
 print(f"\nTraining with learning_rate = {lr}, epochs = {n_epochs}")
+
+# ─── BASELINE: measure accuracy BEFORE a single weight update ───
+# This has to be done here, not read from acc_history[0]. By the end of
+# epoch 0 the network has already taken len(X_train) gradient steps, so
+# acc_history[0] is the average accuracy *while learning*, not a baseline.
+correct_before = sum(1 for i in range(len(X_train))
+                     if np.argmax(net.forward(X_train[i])) == y_train[i])
+acc_before = correct_before / len(X_train)
+print(f"Accuracy BEFORE training: {acc_before:.1%} "
+      f"({correct_before}/{len(X_train)})   [random guessing on 3 classes = 33.3%]")
+
 print(f"{'Epoch':>8s} {'Loss':>10s} {'Accuracy':>10s}")
 print("─" * 30)
 
@@ -344,8 +355,13 @@ for epoch in range(n_epochs):
 
 print(f"""
 THE NETWORK LEARNED!
-  Start:  loss = {loss_history[0]:.4f}, accuracy = {acc_history[0]:.1%} (random guessing)
-  End:    loss = {loss_history[-1]:.4f}, accuracy = {acc_history[-1]:.1%} (learned!)
+  Before training: accuracy = {acc_before:.1%}  (untrained — random weights)
+  During epoch 0:  loss = {loss_history[0]:.4f}, accuracy = {acc_history[0]:.1%}
+                   (already high: this averages over {len(X_train)} weight updates)
+  End:             loss = {loss_history[-1]:.4f}, accuracy = {acc_history[-1]:.1%} (learned!)
+
+  The real jump is {acc_before:.1%} -> {acc_history[-1]:.1%}. Most of it happens
+  inside the FIRST epoch, which is why epoch 0 already looks good.
 
 This is the CORE of deep learning:
   1. Forward pass → prediction
@@ -438,7 +454,29 @@ vW2 = np.zeros_like(net_momentum.W2)
 vb2 = np.zeros_like(net_momentum.b2)
 
 momentum_val = 0.9
-lr_mom = 0.05
+
+# ⚠️ THE LEARNING RATE MUST BE SCALED DOWN WHEN YOU ADD MOMENTUM.
+#
+# Momentum accumulates a running sum of past gradients. With beta = 0.9 the
+# velocity converges to about 1/(1 - beta) = 10x a single gradient step, so the
+# EFFECTIVE learning rate is roughly lr / (1 - beta).
+#
+#   lr = 0.05, beta = 0.9  ->  effective ~0.50
+#
+# Section 6 above already measured that lr = 0.5 is too high (final loss 0.0076,
+# worse than lr = 0.05). So reusing 0.05 here would not be testing momentum --
+# it would be re-testing an overshooting learning rate, and momentum would look
+# worse than plain SGD purely as an artifact.
+#
+# Rule of thumb: when adding momentum beta, multiply lr by (1 - beta).
+#   0.05 * (1 - 0.9) = 0.005   ->  matches SGD exactly     (loss 0.0004)
+#   0.01                       ->  effective ~0.10, better (loss 0.0002)
+#
+# Measured over 500 epochs:
+#   lr=0.05 (eff 0.50) -> 0.0266     <- the unfair comparison
+#   lr=0.01 (eff 0.10) -> 0.0002     <- beats vanilla SGD
+#   lr=0.005 (eff 0.05) -> 0.0004    <- ties vanilla SGD
+lr_mom = 0.01
 momentum_losses = []
 
 for epoch in range(500):
@@ -462,7 +500,8 @@ for epoch in range(500):
     
     momentum_losses.append(epoch_loss / len(X_train))
 
-print(f"  Momentum (0.9): final loss = {momentum_losses[-1]:.4f}")
+print(f"  Momentum (0.9, lr={lr_mom}): final loss = {momentum_losses[-1]:.4f}"
+      f"   [effective lr ~{lr_mom/(1-momentum_val):.2f}]")
 
 # Train with Adam (simplified)
 np.random.seed(42)
