@@ -78,8 +78,6 @@ def convolution_2d(image, kernel, padding_mode='constant'):
     # Without padding: output would be (ih-kh+1, iw-kw+1) = smaller!
     # This matters because in CNNs, we stack many layers.
     # If each layer shrinks the image, we lose border information fast.
-    # This matters because in CNNs, we stack many layers.
-    # If each layer shrinks the image, we lose border information fast.
     # pad_h and pad_w define how many zero-pixels we add to all four sides of the image
     pad_h = kh // 2
     pad_w = kw // 2
@@ -210,30 +208,46 @@ print("=" * 60)
 print("""
 Position (2,2) = top-left corner of the bright square.
 
+The window is taken from the PADDED image, so row 1 above the square is
+still all-dark (10). Getting this right matters — it is the difference
+between 735 and 980.
+
 Image region around (2,2):       Sobel X kernel:
 ┌─────┬─────┬─────┐             ┌────┬───┬───┐
-│  10 │  10 │ 255 │             │ -1 │ 0 │ 1 │
+│  10 │  10 │  10 │             │ -1 │ 0 │ 1 │
 ├─────┼─────┼─────┤             ├────┼───┼───┤
 │  10 │ 255 │ 255 │      ×      │ -2 │ 0 │ 2 │
 ├─────┼─────┼─────┤             ├────┼───┼───┤
 │  10 │ 255 │ 255 │             │ -1 │ 0 │ 1 │
 └─────┴─────┴─────┘             └────┴───┴───┘
 
-Multiply element by element:
-  (10×-1) + (10×0) + (255×1) = -10 + 0 + 255 = 245
+Multiply element by element, row by row:
+  (10×-1) + (10×0)  + (10×1)  = -10 + 0 +  10 =   0   ← all dark: cancels
   (10×-2) + (255×0) + (255×2) = -20 + 0 + 510 = 490
   (10×-1) + (255×0) + (255×1) = -10 + 0 + 255 = 245
 
-Total = 245 + 490 + 245 = 980  ← LARGE positive value
+Total = 0 + 490 + 245 = 735  ← LARGE positive value
 → Strong vertical edge detected! (dark on left, bright on right)
+
+Note the first row contributes exactly 0. Sobel X computes right-minus-left,
+so a row that is uniformly dark cancels itself out. Only rows that actually
+CHANGE across the kernel contribute anything.
+
+The maximum response, 980, occurs one row lower at (3,1) and (3,2), where all
+three rows of the window straddle the edge instead of just two.
 """)
 
 # Verify our hand calculation
 sobel_x = kernels["Sobel_X (vertical edges)"]
 hand_result = results["Sobel_X (vertical edges)"][2, 2]
 print(f"Our code computed: {hand_result:.1f}")
-print(f"Hand calculation:  980.0")
-print(f"Match: {'YES ✓' if abs(hand_result - 980.0) < 1.0 else 'NO ✗'}")
+print(f"Hand calculation:  735.0")
+print(f"Match: {'YES ✓' if abs(hand_result - 735.0) < 1.0 else 'NO ✗'}")
+
+# The strongest response in the whole feature map, for comparison
+peak = results["Sobel_X (vertical edges)"][3, 1]
+print(f"\nStrongest response anywhere: {peak:.1f} at (3,1)")
+print("→ There all 3 kernel rows straddle the edge, not just 2.")
 
 print(f"\nNow check center (3,3) — INSIDE the bright square:")
 center_result = results["Sobel_X (vertical edges)"][3, 3]
