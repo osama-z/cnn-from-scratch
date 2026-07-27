@@ -11,7 +11,7 @@
 
 | File | Lines | What it builds | Run |
 |---|---|---|---|
-| `part1_mnist_classifier.py` | 660 | IDX parsing, normalization, a 3-layer net, full training | `python part1_mnist_classifier.py` |
+| `part1_mnist_classifier.py` | 667 | IDX parsing, normalization, a 3-layer net, full training | `python part1_mnist_classifier.py` |
 
 **Data is not in the repo** (11.5 MB of `.gz`). The script's `download_mnist()`
 fetches it into `mnist_data/` on first run.
