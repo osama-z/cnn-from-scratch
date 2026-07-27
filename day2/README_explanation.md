@@ -312,5 +312,5 @@ ordering teaches the intended lesson: **Adam < Momentum < SGD**.
 
 ---
 
-**Next:** `day3/` — from 3 toy classes to 60,000 real MNIST digits, where data
+**Next:** `day3/` — from 3 toy classes to real MNIST digits, where data
 normalization stops being optional.

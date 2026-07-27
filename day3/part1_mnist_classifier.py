@@ -394,6 +394,15 @@ train_losses = []
 train_accs = []
 test_accs = []
 
+# ─── BASELINE: accuracy BEFORE a single weight update ───
+# This must be measured here, not read from train_accs[0]. By the end of
+# epoch 0 the network has already taken TRAIN_SIZE gradient steps, so
+# train_accs[0] is the average accuracy *while learning*, not a baseline.
+acc_before_train = evaluate(net, X_tr, y_tr)
+acc_before_test  = evaluate(net, X_te, y_te)
+print(f"\nBEFORE training:  train {acc_before_train:.1%}   test {acc_before_test:.1%}"
+      f"   [random guessing on 10 classes = 10.0%]")
+
 print(f"\n{'Epoch':>6s} {'Loss':>10s} {'Train Acc':>10s} {'Test Acc':>10s} {'LR':>10s}")
 print("─" * 50)
 
@@ -445,10 +454,22 @@ for epoch in range(n_epochs):
 
 print(f"""
 RESULTS:
-  Starting accuracy: {train_accs[0]:.1%} (random = 10% for 10 classes)
+  Before training:      train {acc_before_train:.1%}   test {acc_before_test:.1%}   (random = 10%)
+  During epoch 0:       train {train_accs[0]:.1%}
+                        (already high — averages over {TRAIN_SIZE} weight updates)
   Final train accuracy: {train_accs[-1]:.1%}
   Final test accuracy:  {test_accs[-1]:.1%}
-  
+
+  The real jump is {acc_before_train:.1%} -> {train_accs[-1]:.1%} on train,
+  and {acc_before_test:.1%} -> {test_accs[-1]:.1%} on unseen test data.
+
+  GENERALIZATION GAP: {train_accs[-1] - test_accs[-1]:.1%}
+    train {train_accs[-1]:.1%} vs test {test_accs[-1]:.1%}. The network memorized the
+    training set perfectly but is {train_accs[-1] - test_accs[-1]:.1%} worse on data it
+    never saw. That gap IS overfitting, and it is why a test set exists.
+
+  Trained on {TRAIN_SIZE} images, tested on {TEST_SIZE} unseen images.
+
   {'TARGET MET! ✓' if test_accs[-1] > 0.85 else 'Keep training or tune hyperparameters'}
 """)
 

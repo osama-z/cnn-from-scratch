@@ -36,7 +36,7 @@ Golden-model verification
 
 | | Measured |
 |---|---|
-| MNIST test accuracy (NumPy, from scratch) | **95.0%** on 10,000 unseen digits |
+| MNIST test accuracy (NumPy, from scratch) | **95.0%** on 2,000 unseen digits (10k-image training subset) |
 | Cross-implementation agreement | **1.2e-10** across every layer of every image |
 | C inference throughput | **16,000+ FPS**, 1.4 KB working memory |
 | int8 vs float32 | **4× smaller** — all 119 parameters: 476 B → 119 B; ~1.3 pp probability error |

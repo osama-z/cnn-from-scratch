@@ -22,7 +22,7 @@ I learned that Cross-Entropy loss is better than MSE for classification because 
 ## Day 3 — May 28, 2026
 **Topic:** MNIST Handwritten Digit Classification (Python)
 
-I scaled from 3 toy images to 60,000 real handwritten digits — the jump from laboratory to reality. Data normalization (dividing by 255) was critical; without it the gradients explode. My 3-layer dense network achieved **95% test accuracy** on 10,000 unseen images, proving the network truly learned to read numbers rather than memorizing the training set.
+I scaled from 3 toy images to real handwritten digits — the jump from laboratory to reality. Data normalization (dividing by 255) was critical; without it the gradients explode. My 3-layer dense network went from **8.1% to 95.0% test accuracy** on unseen digits, proving it learned to read numbers rather than memorising them. (Trained on a 10,000-image subset and tested on 2,000, not the full 60k/10k — pure NumPy would take hours on the whole set, which is exactly the problem PyTorch solves. I originally logged the full dataset sizes, which was wrong.)
 
 ---
 
