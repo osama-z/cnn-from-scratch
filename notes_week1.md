@@ -63,10 +63,23 @@
 4. One-hot: label `7` → `[0,0,0,0,0,0,0,1,0,0]`
 5. Shuffle every epoch (prevent order memorization)
 
-**Train/Test Split:** Train on 60K, test on 10K unseen images.
-If train acc >> test acc → **Overfitting** (memorized, not learned).
+**Train/Test Split:** the network trains on one set and is scored on another it
+never saw. If train acc >> test acc → **Overfitting** (memorized, not learned).
 
-**Result:** 784→128→64→10 dense net, **95% test accuracy**.
+> ⚠️ The IDX files hold 60K train / 10K test, but `part1_mnist_classifier.py`
+> deliberately uses a **10,000 / 2,000 subset** — the full set takes hours in pure
+> NumPy, which is exactly the problem PyTorch solves. Quote the subset, not the
+> file size.
+
+**Result:** 784→128→64→10 dense net, **8.1% → 95.0% test accuracy**.
+
+```text
+train 100.0%  vs  test 95.0%   →  5-point GENERALIZATION GAP
+```
+
+That gap *is* overfitting, and it's the whole reason a test set exists. Aggregate
+accuracy also hides an 8-point spread: digit 1 hits 99.1%, digit 7 only 91.2%.
+**Always break accuracy down per class.**
 
 ---
 
