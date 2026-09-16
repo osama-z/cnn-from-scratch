@@ -45,6 +45,8 @@ Python commands to preserve multiple runs. See the
 | [verify.py](verify.py) | Layer-by-layer agreement and prediction checks |
 | [benchmark.py](benchmark.py) | Rebuild, verify, warm up, and time native inference |
 | [demo.py](demo.py) | Generate an offline gallery of exported predictions |
+| [evaluate.py](evaluate.py) | Re-evaluate the saved checkpoint and generate figures |
+| [release.py](release.py) | Validate and package a checksummed model/demo bundle |
 
 The reusable kernels and file format code live in [engine/](../engine/README.md).
 

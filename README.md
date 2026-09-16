@@ -15,6 +15,7 @@ deep-learning framework is used to implement the network.
 | Follow the original learning sequence | [Lessons 1–7](lessons/README.md) |
 | Understand the tests and results | [Verification guide](docs/verification.md) |
 | Find a reference or project history | [Documentation index](docs/README.md) |
+| Try the pre-trained model without training | [Model release guide](docs/release.md) |
 
 ## Project layout
 
@@ -74,6 +75,26 @@ See the [recorded baseline](reports/trained-baseline.md) and
 The next substantial milestone is a calibrated integer version of the trained
 CNN, followed by integration and measurement on actual FPGA hardware.
 
+## See the results
+
+![Offline browser demo comparing NumPy, C, and C++ predictions](docs/assets/demo.png)
+
+The gallery works offline and its controls also fit a phone-sized browser.
+Download instructions are in the [model release guide](docs/release.md).
+
+![Training loss and validation accuracy over five epochs](docs/assets/training-curves.png)
+
+The saved checkpoint classifies 9,187 of 10,000 test images correctly.
+These examples show the first six correct and first six incorrect predictions
+in test-set order, so both successes and limitations are visible.
+
+![Correct and incorrect held-out digit predictions](docs/assets/predictions.png)
+
+See the [confusion matrix](docs/assets/confusion-matrix.png),
+[evaluation data](reports/evaluation.json), and [release guide](docs/release.md).
+Recreate these figures with `make evaluate` after installing
+`requirements-release.txt`. Dataset credits are in [DATA_SOURCES.md](DATA_SOURCES.md).
+
 ## Finding files after the reorganization
 
 Old `day1/`–`day7/` folders are now under `lessons/`; `vhdl/` is now
@@ -82,3 +103,5 @@ Old `day1/`–`day7/` folders are now under `lessons/`; `vhdl/` is now
 [docs/history](docs/README.md#project-history).
 
 Author: Osama Z. · [MIT license](LICENSE)
+
+[Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)

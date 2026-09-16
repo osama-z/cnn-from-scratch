@@ -8,18 +8,16 @@ import numpy as np
 from .verify import ROOT, parse_trace, verify_bundle
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=ROOT / "build/trained")
-    args = parser.parse_args()
-    verify_bundle(args.out)
-    with np.load(args.out / "samples.npz", allow_pickle=False) as samples:
+def generate_demo(out):
+    out = Path(out)
+    verify_bundle(out)
+    with np.load(out / "samples.npz", allow_pickle=False) as samples:
         images, labels = samples["images"], samples["labels"]
-    with np.load(args.out / "reference.npz", allow_pickle=False) as reference:
+    with np.load(out / "reference.npz", allow_pickle=False) as reference:
         scores = {"NumPy": reference["softmax"].tolist()}
     for name, title in (("infer_c", "C"), ("infer_cpp", "C++")):
-        raw = subprocess.check_output([str(ROOT / "trained" / name), str(args.out / "weights.bin"),
-                                       str(args.out / "samples.bin")], text=True)
+        raw = subprocess.check_output([str(ROOT / "trained" / name), str(out / "weights.bin"),
+                                       str(out / "samples.bin")], text=True)
         trace = parse_trace(raw)
         scores[title] = [trace[(i, "softmax")].tolist() for i in range(len(images))]
     data = json.dumps({"images": np.rint(images[:, 0] * 255).astype(int).tolist(),
@@ -58,9 +56,16 @@ for(const value of [name,String(prediction),`${(p*100).toFixed(1)}%`]){const td=
 document.getElementById('scores').appendChild(tr)}
 }slider.addEventListener('input',show);document.getElementById('next').addEventListener('click',()=>{slider.value=(Number(slider.value)+1)%data.labels.length;show()});show();
 </script></html>"""
-    target = args.out / "demo.html"
+    target = out / "demo.html"
     target.write_text(html.replace("__DATA__", data))
     print(f"Open {target}")
+    return target
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out", type=Path, default=ROOT / "build/trained")
+    generate_demo(parser.parse_args().out)
 
 
 if __name__ == "__main__":

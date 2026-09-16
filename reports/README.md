@@ -9,6 +9,10 @@ These files preserve the September 15, 2026 baseline:
 | [trained-baseline.md](trained-baseline.md) | Human-readable configuration, accuracy, agreement, and timing results |
 | [trained-metrics.json](trained-metrics.json) | Raw training history, split sizes, hashes, and accuracy |
 | [host-benchmark.json](host-benchmark.json) | CPU timing trials and machine/compiler details |
+| [evaluation.json](evaluation.json) | Confusion matrix and per-class results from the saved checkpoint |
+
+The [result figures](../README.md#see-the-results) visualize that same checkpoint.
+Re-evaluation confirms 9,187 correct predictions on 10,000 test images.
 
 Fresh runs write to `build/trained/` or the directory chosen with `--out`.
 They do not automatically replace these reports. Historical build commands in
