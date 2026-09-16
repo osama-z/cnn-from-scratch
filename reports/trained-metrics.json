@@ -1,0 +1,50 @@
+{
+  "architecture": "Conv(1->4,3x3,same)-ReLU-Pool(2)-Dense(10)-Softmax",
+  "seed": 42,
+  "train_size": 10000,
+  "validation_size": 2000,
+  "test_size": 10000,
+  "epochs": 5,
+  "best_epoch": 5,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "validation_accuracy": 0.923,
+  "test_accuracy": 0.9187,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.9553897124290466,
+      "validation_accuracy": 0.8765
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.3887367825508118,
+      "validation_accuracy": 0.8955
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.32501722316741943,
+      "validation_accuracy": 0.911
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.29527743153572084,
+      "validation_accuracy": 0.918
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.27336663532257083,
+      "validation_accuracy": 0.923
+    }
+  ],
+  "elapsed_seconds": 14.340040695002244,
+  "numpy": "2.4.2",
+  "python": "3.12.3",
+  "dataset_sha256": {
+    "train-images-idx3-ubyte.gz": "440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609",
+    "train-labels-idx1-ubyte.gz": "3552534a0a558bbed6aed32b30c495cca23d567ec52cac8be1a0730e8010255c",
+    "t10k-images-idx3-ubyte.gz": "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6",
+    "t10k-labels-idx1-ubyte.gz": "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6"
+  },
+  "weights_sha256": "0faae314b694a47245e5126c0db8a5c7de779dca66a4f03dbf5e89df55a5a4b7"
+}

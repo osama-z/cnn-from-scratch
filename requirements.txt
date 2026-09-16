@@ -1,0 +1,2 @@
+# Runtime and test dependency for the reusable CNN (Python 3.10+).
+numpy>=1.24,<3

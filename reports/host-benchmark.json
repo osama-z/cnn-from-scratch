@@ -1,0 +1,113 @@
+{
+  "platform": "Linux-6.6.114.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "processor": "x86_64",
+  "trials": 5,
+  "weights_sha256": "0faae314b694a47245e5126c0db8a5c7de779dca66a4f03dbf5e89df55a5a4b7",
+  "timing": "CLOCK_MONOTONIC; 10 warm-ups; excludes model/input loading and printing",
+  "c_scope": "preallocated activation buffers; scalar float inference",
+  "cpp_scope": "input copy and Tensor allocations included; scalar float inference",
+  "results": {
+    "infer_c": {
+      "median_latency_us": 63.812252,
+      "median_fps": 15670.971775138103,
+      "trials": [
+        {
+          "repeats": 2000,
+          "seconds": 0.141780704,
+          "latency_us": 70.890352,
+          "fps": 14106.2919,
+          "checksum": 192.138445
+        },
+        {
+          "repeats": 2000,
+          "seconds": 0.127624504,
+          "latency_us": 63.812252,
+          "fps": 15670.9718,
+          "checksum": 192.138445
+        },
+        {
+          "repeats": 2000,
+          "seconds": 0.135964304,
+          "latency_us": 67.982152,
+          "fps": 14709.7432,
+          "checksum": 192.138445
+        },
+        {
+          "repeats": 2000,
+          "seconds": 0.125056204,
+          "latency_us": 62.528102,
+          "fps": 15992.8091,
+          "checksum": 192.138445
+        },
+        {
+          "repeats": 2000,
+          "seconds": 0.124288104,
+          "latency_us": 62.144052,
+          "fps": 16091.6446,
+          "checksum": 192.138445
+        }
+      ],
+      "binary_sha256": "3872d8af4aed3040101c55536a98ae914f25ba7a0f4edc57ec7a46f17ba945b7"
+    },
+    "infer_cpp": {
+      "median_latency_us": 90.096053,
+      "median_fps": 11099.265358494673,
+      "trials": [
+        {
+          "repeats": 2000,
+          "seconds": 0.179187105,
+          "latency_us": 89.5935525,
+          "fps": 11161.5175,
+          "checksum": 192.138445
+        },
+        {
+          "repeats": 2000,
+          "seconds": 0.180192106,
+          "latency_us": 90.096053,
+          "fps": 11099.2654,
+          "checksum": 192.138445
+        },
+        {
+          "repeats": 2000,
+          "seconds": 0.184554605,
+          "latency_us": 92.2773025,
+          "fps": 10836.9011,
+          "checksum": 192.138445
+        },
+        {
+          "repeats": 2000,
+          "seconds": 0.176634606,
+          "latency_us": 88.317303,
+          "fps": 11322.8095,
+          "checksum": 192.138445
+        },
+        {
+          "repeats": 2000,
+          "seconds": 0.180474005,
+          "latency_us": 90.2370025,
+          "fps": 11081.9284,
+          "checksum": 192.138445
+        }
+      ],
+      "binary_sha256": "2a37f39122ff1b845f82b05ca8f036538c6cd4e8d477795cae33192de71f4545"
+    }
+  },
+  "sample_shape": [
+    32,
+    1,
+    28,
+    28
+  ],
+  "parameter_payload_bytes": 31560,
+  "model_file_bytes": 31720,
+  "cpu_model": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz",
+  "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "g++": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "build_commands": [
+    "make: Entering directory '/home/osama/ai-workspace/projects/ai-flow/trained'",
+    "gcc -D_POSIX_C_SOURCE=200809L -O2 -Wall -Wextra -std=c11 -o infer_c infer_c.c -lm",
+    "g++ -D_POSIX_C_SOURCE=200809L -O2 -Wall -Wextra -std=c++17 -o infer_cpp infer_cpp.cpp",
+    "make: Leaving directory '/home/osama/ai-workspace/projects/ai-flow/trained'"
+  ]
+}
