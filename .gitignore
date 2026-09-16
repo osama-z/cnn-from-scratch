@@ -4,6 +4,7 @@ __pycache__/
 
 # Virtual environment
 venv/
+.venv/
 
 # OS files
 .DS_Store
@@ -12,14 +13,18 @@ Thumbs.db
 # Compiled binaries & objects
 *.o
 *.out
-day4/conv2d
-day4/cnn_forward
-day5/fixed_point
-day6/cnn_forward
-day6/templated_cnn
-day7/golden_c
-day7/golden_cpp
-day7/corrupt.bin
+lessons/day4/conv2d
+lessons/day4/cnn_forward
+lessons/day5/fixed_point
+lessons/day6/cnn_forward
+lessons/day6/templated_cnn
+lessons/day7/golden_c
+lessons/day7/golden_cpp
+lessons/day7/corrupt.bin
+lessons/day7/test_engine
+trained/infer_c
+trained/infer_cpp
+build/
 *_asan
 *.s
 
@@ -29,8 +34,8 @@ asan_report.txt
 *.gcno
 gmon.out
 
-# Data files (too large for GitHub — see day3/README_explanation.md to re-download)
-day3/mnist_data/
+# Data files (too large for GitHub — see lessons/day3/README.md to re-download)
+lessons/day3/mnist_data/
 
 # IDE
 .vscode/
@@ -40,6 +45,6 @@ day3/mnist_data/
 .claude/settings.local.json
 
 # GHDL build artifacts
-vhdl/build/
+hardware/vhdl/build/
 *.ghw
 *.cf

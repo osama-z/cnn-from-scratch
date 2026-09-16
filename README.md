@@ -1,212 +1,84 @@
-# CNN From Scratch — NumPy → C → C++ → int8 → VHDL
+# CNN from scratch
 
-**One convolutional neural network, implemented five ways, every output verified identical.**
+Build a convolutional neural network with NumPy, run its learned weights in C and
+C++, and explore the hardware building blocks in VHDL.
 
-No frameworks. Every operation — convolution, backpropagation, quantization, memory
-layout — written from first principles and checked against a single reference model.
+This is both a learning project and a small, tested inference engine. No
+deep-learning framework is used to implement the network.
 
-```text
-        NumPy   ──►    C    ──►   C++   ──►   int8   ──►   VHDL
-      days 1-3       day 4       day 6        day 5       phase 1
-          │            │           │            │            │
-          └────────────┴───────────┴────────────┴────────────┘
-                                  │
-                            weights.bin
-                    one frozen set of numbers that
-                     every implementation loads
-```
+## Start here
 
-```console
-$ cd day7 && make verify
-
-Golden-model verification
-  comparing every layer of 4 images against the NumPy reference
-    [C  ] PASS  (largest deviation 1.20e-10)
-    [C++] PASS  (largest deviation 1.20e-10)
-
-  RESULT: golden model verified. NumPy = C = C++, bit-close.
-```
-
-**Author:** Osama Z.
-**Focus:** embedded AI · quantization · hardware-software co-design
-
----
-
-## Results
-
-| | Measured |
+| I want to… | Read |
 |---|---|
-| MNIST test accuracy (NumPy, from scratch) | **95.0%** on 2,000 unseen digits (10k-image training subset) |
-| Cross-implementation agreement | **1.2e-10** across every layer of every image |
-| C inference throughput | **16,000+ FPS**, 1.4 KB working memory |
-| int8 vs float32 | **4× smaller** — all 119 parameters: 476 B → 119 B; ~1.3 pp probability error |
-| Peak int32 conv accumulator | **48,387** — needs 17 bits signed, so int8 *and* int16 overflow |
-| VHDL conv engine vs NumPy | **384/384 outputs match** — hand-written RTL, bit-exact |
-| VHDL streaming datapath | **384/384** with windows formed in hardware from a raster stream |
-| Streaming buffer cost | **2W+3 = 19 bytes** instead of W×H — 540× saving at 1920-wide video |
-| Memory safety | ASan + UBSan clean on all binaries, zero `free()` in the C++ |
+| Understand how the CNN works | [Step-by-step guide](docs/guide.md) |
+| Install dependencies and run it | [Setup and commands](docs/setup.md) |
+| Follow the original learning sequence | [Lessons 1–7](lessons/README.md) |
+| Understand the tests and results | [Verification guide](docs/verification.md) |
+| Find a reference or project history | [Documentation index](docs/README.md) |
 
----
-
-## Why this exists
-
-A framework can train a network in ten lines. It cannot tell you *why* `int8 × int8`
-overflows, why an unaligned float load faults on ARM, or why your C and C++ builds
-silently disagreed. This project answers those questions by building the thing.
-
-The single thread running through all of it:
+## Project layout
 
 ```text
-        int8 × int8 overflows → you MUST accumulate in int32
-
-Day 5    a comment you have to remember             (C)
-Day 6    a type the compiler enforces               (C++ AccumTraits)
-Day 7    48,387 — the peak, measured on real data   (golden model)
-VHDL     a 32-bit accumulator register, verified    (hardware)
+cnn-from-scratch/
+├── docs/           Explanations, setup, references, and history
+├── lessons/        Seven original learning stages
+├── engine/         Reusable C/C++ layers and model serialization
+├── trained/        NumPy training, native inference, verification, and demo
+├── hardware/vhdl/  Integer convolution blocks and testbenches
+├── tests/          Training and deployment regression tests
+├── scripts/        Repository maintenance checks
+├── reports/        Recorded accuracy and host benchmark results
+└── build/          Generated training artifacts (ignored by Git)
 ```
 
-One rule, four levels of abstraction, each enforcing it more strongly than the last.
+Each main folder has its own README. The lessons explain the concepts;
+`engine/` contains reusable implementation code; `trained/` connects training
+to deployment.
 
----
+## Quick start
 
-## Where to start
-
-**New here? Read in this order:**
-
-| # | File | What you get |
-|---|---|---|
-| 1 | **[UNDERSTAND.md](UNDERSTAND.md)** | Every design decision and why the alternative was rejected. One number traced through all six layers with real output. Start here. |
-| 2 | [day7/README_explanation.md](day7/README_explanation.md) | The verification story — and the bug that was hiding in the repo |
-| 3 | [day6/README_explanation.md](day6/README_explanation.md) | RAII, virtual dispatch, and why `Tensor<int8_t>` alone recreates an overflow bug |
-| 4 | [notes_week1.md](notes_week1.md) | Formula cheat sheet — every equation on one page |
-
-**Want the code?** `day7/cnn.hpp` is the cleanest expression of the engine.
-`day4/cnn_forward.c` is the one that teaches pointers.
-
----
-
-## What's in each day
-
-| Day | Language | Builds | Deep dive |
-|---|---|---|---|
-| **1** | Python/NumPy | Convolution, ReLU, MaxPool, Dense, Softmax from nothing | [explanation](day1/README_explanation.md) |
-| **2** | Python/NumPy | Cross-entropy, backprop by chain rule, SGD/Momentum/Adam | [explanation](day2/README_explanation.md) |
-| **3** | Python/NumPy | MNIST at 95%, IDX parsing, train/test discipline | [explanation](day3/README_explanation.md) |
-| **4** | C | Same network, `float*` and 1D indexing, manual `malloc`/`free` | [explanation](day4/README_explanation.md) |
-| **5** | C | int8 quantization, scale/zero-point, the int32 accumulator rule | [explanation](day5/README_explanation.md) |
-| **6** | C++ | Classes, RAII, templates — float and int8 from one source | [explanation](day6/README_explanation.md) |
-| **7** | Python + C + C++ | The golden model, a hand-rolled binary format, layer-by-layer verification | [explanation](day7/README_explanation.md) · [format spec](day7/MODEL_FORMAT.md) |
-| **VHDL** | VHDL | MAC, ReLU, requantize, conv3×3, line buffer — **384/384 streamed vs the golden model** | [explanation](vhdl/README_explanation.md) |
-
----
-
-## Run it
+Run from the repository root. You need Python 3.10+, GCC/G++, and Make.
+See [setup](docs/setup.md) for package installation and optional VHDL tools.
 
 ```bash
-# Verify all implementations agree (the headline claim)
-cd day7 && make verify
-
-# Prove the loader has no leaks and no buffer overruns
-cd day7 && make asan
-
-# Prove a corrupted model file is rejected, not trusted
-cd day7 && make test-robust
-
-# C++: object-oriented version, then float-vs-int8 from one templated source
-cd day6 && make run
-cd day6 && make asan     # RAII proof: zero leaks, zero free() in the source
-cd day6 && make asm      # `if constexpr` proof: the two builds share no arithmetic
-
-# Hardware: 5 units, 4 testbenches, 791 assertions
-cd vhdl && make test     # includes 768 conv outputs vs the NumPy reference
-cd vhdl && make synth    # netlists confirm 9 multipliers in conv3x3
-cd vhdl && make wave     # gtkwave build/mac.ghw
-
-# Earlier days
-cd day4 && make && ./cnn_forward       # C, ~16k FPS
-cd day5 && make && ./fixed_point       # int8 quantization
-cd day1 && python part1_convolution.py # the math, visualized
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+make test-software
+make download
+make train
+make verify-trained
+make demo
 ```
 
-MNIST archives are not in the repo (11.5 MB). `day3/README_explanation.md` covers
-re-downloading them.
+Open `build/trained/demo.html` in a browser. It is an offline gallery of held-out
+images with NumPy, C, and C++ predictions, not a drawing recognizer.
 
----
+Use `make help` for available commands. `make test` also requires GHDL and runs
+the hardware and documentation checks. Tests do not download MNIST.
 
-## Two things worth knowing before you read the output
+## What works today?
 
-**The class labels are meaningless, deliberately.** The convolution kernels are
-hand-designed edge detectors, but the Dense layer is generated and never trained — so it
-maps good features to arbitrary classes. This project verifies that five implementations
-*agree*, not that the network is accurate. Training is Day 2's subject.
-
-**"Verified" means bit-close, not bit-identical.** The measured deviation is 1.2e-10
-against a 1e-4 tolerance. `expf()`, NumPy's `exp()`, and fused multiply-add round
-differently; demanding exactness across languages and compilers would be wrong.
-
----
-
-## Verification approach
-
-The interesting part isn't that the tests pass — it's that they were checked for the
-ability to fail. Bugs were deliberately injected to see whether the suite would notice:
-
-| Injected bug | Layer | Caught? |
+| Component | Recorded result | What it means |
 |---|---|---|
-| Off-by-one in convolution padding | C | ✅ first divergence at `conv` |
-| Dense weight layout transposed | C | ✅ first divergence at `dense` |
-| Softmax loses its stability guard | C | ❌ **passed — a hole in the test** |
-| Accumulator narrowed 32 → 16 bits | VHDL | ✅ `got 16384, expected 147456` |
-| ReLU written as `max(0, x)` | VHDL | ✅ `got 0, expected -50` |
-| One of nine multiplies dropped | VHDL | ✅ named the exact pixel |
-| Zero padding replaced with 1 | VHDL | ✅ named the exact pixel |
+| Trained NumPy CNN | 91.87% on 10,000 MNIST test images | The convolution and Dense weights were learned |
+| Trained C/C++ deployment | 32/32 predictions agree with NumPy per engine | Exported samples agree at every checked layer |
+| Small Day 7 golden model | Maximum absolute difference about `1.2e-10` | The frozen verification fixture agrees across float implementations |
+| VHDL convolution tests | 384/384 values in each of two convolution benches | Integer convolution matches its reference vectors |
 
-The third exposed a gap: the original images only drove logits to ~16.8, and `exp(16.8)`
-never overflows, so the guard was never exercised. A fourth test image at amplitude 60
-(logit ≈ 100 → `exp` → `inf` → `NaN`) closed it.
+These are different checks, not one end-to-end FPGA result. The original Day 3
+result of about 95% belongs to a **dense neural network**, not the CNN.
+See the [recorded baseline](reports/trained-baseline.md) and
+[verification boundaries](docs/verification.md).
 
-The VHDL mutations show the same pattern twice over: at a 16-bit accumulator the
-*small-operand* checks still passed, and only the worst case exposed the wrap.
+The next substantial milestone is a calibrated integer version of the trained
+CNN, followed by integration and measurement on actual FPGA hardware.
 
-**A passing suite is evidence only once you have checked that it can fail.**
+## Finding files after the reorganization
 
----
+Old `day1/`–`day7/` folders are now under `lessons/`; `vhdl/` is now
+`hardware/vhdl/`. The former `UNDERSTAND.md` is now
+[the main guide](docs/guide.md). Planning notes and the learning log live in
+[docs/history](docs/README.md#project-history).
 
-## Repo layout
-
-```text
-UNDERSTAND.md      every decision, and why — start here
-ROADMAP.md         the plan and its revisions
-notes_week1.md     formula cheat sheet
-daily_log.md       what was learned, day by day
-
-day1/ day2/ day3/  Python — the math
-day4/ day5/        C — memory and fixed-point
-day6/              C++ — structure without cost
-day7/              the golden model and verifier
-  cnn.hpp            the reusable float engine
-  model_io.h         header-only loader, shared by C and C++
-  export_weights.py  writes weights.bin + reference outputs + VHDL vectors
-  verify.py          compares every layer against NumPy
-  MODEL_FORMAT.md    byte-level format spec
-  vhdl_vectors/      int8 test vectors for the hardware testbench
-
-vhdl/              hardware — 5 units, 4 testbenches, 791 assertions
-  cnn_types.vhd      shared array types
-  mac_unit.vhd       int8 x int8 -> int32, sequential
-  relu_int8.vhd      max(zero_point, x), combinational
-  requantize.vhd     fixed-point multiply + shift, saturating
-  conv3x3.vhd        nine parallel multipliers + adder tree
-  line_buffer.vhd    2W+3 shift register, forms windows from a stream
-  tb_conv3x3.vhd     reads day7/vhdl_vectors/, checks 384 outputs
-  tb_stream_conv.vhd full datapath, 384 outputs, windows built in HW
-```
-
-Each day folder holds heavily commented source (23–32% comments) plus a
-`README_explanation.md` deriving the concepts from first principles.
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+Author: Osama Z. · [MIT license](LICENSE)
