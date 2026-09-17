@@ -32,6 +32,7 @@ main{max-width:800px;margin:auto}h1{font-size:36px;margin-bottom:8px}p{color:#cb
 table{border-collapse:collapse;min-width:280px}td,th{text-align:left;padding:14px;border-bottom:1px solid #344054}
 input{width:100%;margin:24px 0}button{background:#a7f3d0;border:0;border-radius:8px;padding:10px 20px;font:inherit;cursor:pointer}
 #truth{font-size:22px;color:#a7f3d0}small{color:#cbd5e1}
+@media(max-width:600px){body{padding:28px 16px}h1{font-size:30px}.demo{gap:16px}.demo>div{width:100%;min-width:0}canvas{max-width:100%;height:auto;aspect-ratio:1}table{width:100%;min-width:0}td,th{padding:12px 8px;font-size:15px}}
 </style><main>
 <p>NUMPY → C → C++</p><h1>One trained CNN. Three implementations.</h1>
 <p>Explore held-out MNIST digits and compare predictions from the same exported weights.</p>
