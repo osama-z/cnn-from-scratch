@@ -89,6 +89,10 @@ make benchmark
 make demo
 ```
 
+To create test-set figures and a distributable model bundle, follow the
+[release guide](release.md). The pre-trained bundle can also be used to verify
+native inference without downloading the dataset or training again.
+
 Open `build/trained/demo.html` in a browser. The page displays precomputed
 predictions from actual NumPy, C, and C++ runs on exported test images. It needs
 no external web assets. It does not accept hand-drawn input.

@@ -35,6 +35,7 @@ generate it using [setup](setup.md), then run `make verify-trained`.
 | Export and deployment | [Trained verifier](../trained/verify.py) | Every expected layer is present, finite, and close; predictions agree |
 | Failure propagation | [Regression tests](../tests/test_trained.py) | A failed synthesis tool or broken corruption checker cannot silently pass |
 | Documentation links | [Link checker](../scripts/check_docs.py) | Local inline Markdown links and supported heading anchors resolve |
+| Evaluation and packaging | [Release tests](../tests/test_release.py) | Confusion-matrix orientation, model/sample consistency, archive checksums, and file allowlist |
 
 The trained verifier checks `input`, `conv`, `relu`, `pool`, `flatten`,
 `dense`, and `softmax`. It rejects missing or duplicate trace entries and

@@ -8,18 +8,16 @@ import numpy as np
 from .verify import ROOT, parse_trace, verify_bundle
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=ROOT / "build/trained")
-    args = parser.parse_args()
-    verify_bundle(args.out)
-    with np.load(args.out / "samples.npz", allow_pickle=False) as samples:
+def generate_demo(out):
+    out = Path(out)
+    verify_bundle(out)
+    with np.load(out / "samples.npz", allow_pickle=False) as samples:
         images, labels = samples["images"], samples["labels"]
-    with np.load(args.out / "reference.npz", allow_pickle=False) as reference:
+    with np.load(out / "reference.npz", allow_pickle=False) as reference:
         scores = {"NumPy": reference["softmax"].tolist()}
     for name, title in (("infer_c", "C"), ("infer_cpp", "C++")):
-        raw = subprocess.check_output([str(ROOT / "trained" / name), str(args.out / "weights.bin"),
-                                       str(args.out / "samples.bin")], text=True)
+        raw = subprocess.check_output([str(ROOT / "trained" / name), str(out / "weights.bin"),
+                                       str(out / "samples.bin")], text=True)
         trace = parse_trace(raw)
         scores[title] = [trace[(i, "softmax")].tolist() for i in range(len(images))]
     data = json.dumps({"images": np.rint(images[:, 0] * 255).astype(int).tolist(),
@@ -34,6 +32,7 @@ main{max-width:800px;margin:auto}h1{font-size:36px;margin-bottom:8px}p{color:#cb
 table{border-collapse:collapse;min-width:280px}td,th{text-align:left;padding:14px;border-bottom:1px solid #344054}
 input{width:100%;margin:24px 0}button{background:#a7f3d0;border:0;border-radius:8px;padding:10px 20px;font:inherit;cursor:pointer}
 #truth{font-size:22px;color:#a7f3d0}small{color:#cbd5e1}
+@media(max-width:600px){body{padding:28px 16px}h1{font-size:30px}.demo{gap:16px}.demo>div{width:100%;min-width:0}canvas{max-width:100%;height:auto;aspect-ratio:1}table{width:100%;min-width:0}td,th{padding:12px 8px;font-size:15px}}
 </style><main>
 <p>NUMPY → C → C++</p><h1>One trained CNN. Three implementations.</h1>
 <p>Explore held-out MNIST digits and compare predictions from the same exported weights.</p>
@@ -58,9 +57,16 @@ for(const value of [name,String(prediction),`${(p*100).toFixed(1)}%`]){const td=
 document.getElementById('scores').appendChild(tr)}
 }slider.addEventListener('input',show);document.getElementById('next').addEventListener('click',()=>{slider.value=(Number(slider.value)+1)%data.labels.length;show()});show();
 </script></html>"""
-    target = args.out / "demo.html"
+    target = out / "demo.html"
     target.write_text(html.replace("__DATA__", data))
     print(f"Open {target}")
+    return target
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out", type=Path, default=ROOT / "build/trained")
+    generate_demo(parser.parse_args().out)
 
 
 if __name__ == "__main__":

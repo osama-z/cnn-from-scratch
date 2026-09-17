@@ -10,6 +10,7 @@ Start with the [main guide](guide.md) if the concepts are new, or
 2. [Setup and commands](setup.md): dependencies, tests, training, and the demo.
 3. [Lessons 1–7](../lessons/README.md): small examples in learning order.
 4. [Verification](verification.md): what each test checks and what it cannot prove.
+5. [Model release](release.md): run the pre-trained demo and rebuild the bundle.
 
 ## Implementation and references
 

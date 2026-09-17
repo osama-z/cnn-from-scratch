@@ -15,6 +15,8 @@ help:
 	@echo "  make verify-trained  Check exported trained weights in both engines"
 	@echo "  make benchmark       Measure verified native CPU inference"
 	@echo "  make demo            Generate build/trained/demo.html"
+	@echo "  make evaluate        Generate test-set figures (requirements-release.txt)"
+	@echo "  make release         Package a verified model/demo from committed source"
 	@echo "Optional: append PYTHON=/absolute/path/to/python"
 
 all:
@@ -49,10 +51,16 @@ download:
 demo: all
 	$(PYTHON) -m trained.demo
 
+evaluate:
+	$(PYTHON) -m trained.evaluate
+
+release: all
+	$(PYTHON) -m trained.release
+
 verify-trained: all
 	$(PYTHON) -m trained.verify
 
 benchmark: all
 	$(PYTHON) -m trained.benchmark
 
-.PHONY: help all test test-software test-hardware docs-check verify-golden asan train download demo verify-trained benchmark
+.PHONY: help all test test-software test-hardware docs-check verify-golden asan train download demo evaluate release verify-trained benchmark

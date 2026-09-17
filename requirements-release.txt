@@ -1,0 +1,3 @@
+# Optional dependencies for evaluation figures and the release workflow.
+-r requirements.txt
+matplotlib>=3.7,<4

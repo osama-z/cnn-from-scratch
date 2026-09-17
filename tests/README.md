@@ -6,6 +6,10 @@
 cases, learning on generated patterns, checkpoint/export consistency, native
 inference, invalid shapes/values, and failure propagation.
 
+[test_release.py](test_release.py) checks confusion-matrix orientation, rejection
+of mixed model/sample bundles, archive checksums, deterministic packaging, and
+exclusion of files outside the release allowlist.
+
 From the repository root:
 
 ```bash
