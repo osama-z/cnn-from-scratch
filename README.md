@@ -73,7 +73,8 @@ See the [recorded baseline](reports/trained-baseline.md) and
 [verification boundaries](docs/verification.md).
 
 The next substantial milestone is a calibrated integer version of the trained
-CNN, followed by integration and measurement on actual FPGA hardware.
+CNN, followed by integration and measurement on actual FPGA hardware. See the
+[technical roadmap](docs/roadmap.md) for deliverables and verification steps.
 
 ## See the results
 
@@ -99,8 +100,9 @@ Recreate these figures with `make evaluate` after installing
 
 Old `day1/`–`day7/` folders are now under `lessons/`; `vhdl/` is now
 `hardware/vhdl/`. The former `UNDERSTAND.md` is now
-[the main guide](docs/guide.md). Planning notes and the learning log live in
-[docs/history](docs/README.md#project-history).
+[the main guide](docs/guide.md). Future milestones are in the
+[technical roadmap](docs/roadmap.md); the original exercises are recorded in the
+[learning log](docs/history/learning-log.md).
 
 Author: Osama Z. · [MIT license](LICENSE)
 

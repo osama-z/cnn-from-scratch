@@ -11,6 +11,10 @@ venv/
 .env.*
 !.env.example
 
+# Keep local personal planning outside the public project.
+/private/
+/personal-notes/
+
 # OS files
 .DS_Store
 Thumbs.db

@@ -1,6 +1,6 @@
 # 📓 Daily Learning Log
 
-> Personal learning history, preserved in its original voice. Historical timing
+> Learning history, preserved in its original voice. Historical timing
 > claims and informal explanations below are not current benchmark evidence.
 > For precise explanations, read the [CNN guide](../guide.md); for measured
 > results, read the [baseline report](../../reports/trained-baseline.md).

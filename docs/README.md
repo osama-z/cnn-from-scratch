@@ -22,13 +22,13 @@ Start with the [main guide](guide.md) if the concepts are new, or
 | Equations and tensor layouts | [Formula reference](reference/formulas.md) |
 | Binary model specification | [Model format v1](reference/model-format.md) |
 | Measured accuracy and CPU performance | [Baseline report](../reports/trained-baseline.md) |
+| Planned technical milestones | [Technical roadmap](roadmap.md) |
 
 ## Project history
 
-These files preserve the original learning journey. They contain historical
-plans, not a statement that every planned feature exists today.
+The learning log records the original exercises. Historical observations are
+separate from the current measured results in the verification guide.
 
 - [Learning log](history/learning-log.md)
-- [Original roadmap](history/roadmap.md)
 
 [Back to the project](../README.md)
